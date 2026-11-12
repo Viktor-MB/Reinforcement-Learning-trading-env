@@ -2,33 +2,109 @@
 
 **Autores:** Tiago Macedo · Viktor Mayer · Enzo Guedes, IBMEC
 
-Este projeto modela a decisão de *trading* de um ativo (Bitcoin, `BTC-USD`, com o ouro `GLD` como reserva caso o download falhe) como um **Processo de Decisão de Markov (MDP)** finito. A política ótima é obtida por **Value Iteration** e comparada, fora da amostra, com *benchmarks* e com modelos supervisionados de *machine learning*.
+Este projeto modela a decisão de *trading* de um ativo (Bitcoin, `BTC-USD`, com o ouro `GLD` como reserva caso o download falhe) como um **Processo de Decisão de Markov (MDP)** finito, **model-based**. A política ótima é obtida por **Value Iteration** e avaliada no simulador `gym-trading-env`, fora da amostra, contra *benchmarks* e modelos supervisionados de *machine learning*.
 
 ---
 
 ## Ideia central
 
-Em vez de prever o preço, o agente aprende **qual posição assumir** a cada dia, levando em conta o custo de operar.
+Em vez de prever o preço, o agente aprende **qual posição assumir** a cada dia, levando em conta o custo de operar. O simulador de mercado não fornece a matriz de transições; por isso a dinâmica ($\widehat{P}$) e a recompensa ($\widehat{R}$) são **estimadas empiricamente** na base de treino, o que permite aplicar o Value Iteration de forma exata (de *model-free* para *model-based*).
 
-### Modelagem do MDP
+---
 
-| Elemento | Definição |
-|---|---|
-| **Sinal** | $x_t = \ln\left(P_t / \text{MA}_{50}(P)_t\right)$, o preço relativo à média móvel de 50 dias |
-| **Discretização** | $\phi(x_t) \in \{0, 1, 2\}$ (baixa / neutro / alta), com limiares nos tercis **calculados só com dados de treino** (sem vazamento de informação) |
-| **Estado** | $s_t = (\phi(x_t), \phi(x_{t-1}), h_{t-1})$, ou seja, **27 estados** (3 × 3 × 3) |
-| **Ações** | $a_t \in \{-1, 0, +1\}$: vendido (*short*), fora do mercado, comprado (*long*) |
-| **Recompensa** | $R = \ln\left(1 + a \cdot r_{t+1} - \kappa \cdot \lvert a - h\rvert\right)$, o log-retorno líquido de corretagem ($\kappa = 0{,}1\%$) |
-| **Fator de desconto** | $\gamma = 0{,}8$ |
-| **Transição** | $\widehat{P}$ estimada por contagem de frequências no treino; a parte da posição ($h_t = a_t$) é determinística |
+## Modelagem do MDP
 
-### Algoritmo
+### 1. Estado e ações
 
-1. Baixa os dados (`yfinance`) e a taxa livre de risco (`^IRX`, T-bill de 3 meses).
-2. Separa **treino** (até 2021-12-31) e **teste** (a partir de 2022-01-01).
-3. Estima $\widehat{P}$ e $\widehat{R}$ no conjunto de treino.
-4. Resolve o MDP com **Value Iteration** (convergência em ~98 iterações, 99% do valor ótimo em ~15).
-5. Executa a política $\pi^*$ no `gym-trading-env` e mede o desempenho no teste.
+O agente observa o regime de tendência do ativo e a sua posição corrente:
+
+$$s_t = (x_t,\ x_{t-1},\ h_{t-1})$$
+
+- **Sinal de tendência:** $x_t = \ln\left(\dfrac{c_t}{\text{MA}_{50}(c_t)}\right)$, o desvio do preço de fechamento em relação à média móvel de 50 dias ($x_t > 0$: regime altista; $x_t < 0$: baixista).
+- **Posição mantida (*holding*):** $h_{t-1} \in \{-1, 0, +1\}$, atualizada por $h_t = a_t$.
+- **Ações:** $a_t \in \{-1, 0, +1\}$, em que $-1$ é vendido (*short*), $0$ é neutro (fora do mercado) e $+1$ é comprado (*long*).
+
+### 2. Discretização
+
+O sinal é discretizado em 3 faixas pelos **tercis do conjunto de treino** (limiares $\tau_1, \tau_2$ calculados só com dados de treino, sem vazamento de informação):
+
+$$\phi(x) = \begin{cases} 0, & x \le \tau_1 \ \text{(tendência de baixa)} \\ 1, & \tau_1 < x \le \tau_2 \ \text{(regime neutro)} \\ 2, & x > \tau_2 \ \text{(tendência de alta)} \end{cases}$$
+
+O estado discreto é $\tilde{s}_t = (\phi(x_t), \phi(x_{t-1}), h_{t-1})$, com $|\mathcal{S}| = 3^2 \times 3 = $ **27 estados**.
+
+> Usar $x_t$ (médio prazo) em vez de ruído diário reduz rotações excessivas da carteira e preserva o capital frente aos custos de transação.
+
+### 3. Recompensa e transição
+
+A recompensa imediata é o log-retorno líquido do patrimônio $W_t$:
+
+$$R_{t+1} = \ln\left(\frac{W_{t+1}}{W_t}\right) = \ln(g_{t+1}), \qquad g_{t+1} = 1 + a_t\, r_{t+1} - \kappa\,\lvert a_t - h_{t-1}\rvert$$
+
+em que $r_{t+1} = c_{t+1}/c_t - 1$ é o retorno linear do ativo e $\kappa = 0{,}1\%$ é a corretagem cobrada a cada mudança de posição. A transição pretendida é $\tilde{s}_{t+1} = (\phi(x_{t+1}), \phi(x_t), a_t)$: a parte da posição é determinística e a parte de mercado é estimada dos dados históricos.
+
+> **Observação:** no simulador, a exposição vendida mantida não é rebalanceada diariamente para $-100\%$. Por isso a recompensa do ambiente pode diferir levemente da fórmula simplificada nos períodos de *short* mantido (documentado nos testes do notebook).
+
+### 4. Equações de Bellman
+
+$$V^\pi(s) = \sum_{a} \pi(a \mid s)\, Q^\pi(s,a), \qquad Q^\pi(s,a) = \sum_{s'} \widehat{P}(s' \mid s,a)\left[\widehat{R}(s,a,s') + \gamma V^\pi(s')\right]$$
+
+### 5. Inferência empírica
+
+$$\widehat{P}(s' \mid s,a) = \frac{N(s,a,s')}{N(s,a)}, \qquad \widehat{R}(s,a,s') = \frac{1}{N(s,a,s')}\sum_{k=1}^{N(s,a,s')} \ln\left(1 + a\, r^{(k)}_{t+1} - \kappa\,\lvert a - h_{t-1}\rvert\right)$$
+
+A recompensa usa o retorno linear bruto $r_{t+1}$; $x_t$ apenas indexa o estado.
+
+### 6. Value Iteration e política ótima
+
+$$V_{k+1}(s) = \max_{a \in \mathcal{A}} \sum_{s'} \widehat{P}(s' \mid s,a)\left[\widehat{R}(s,a,s') + \gamma V_k(s')\right], \qquad \pi^*(s) = \arg\max_a Q^*(s,a)$$
+
+O algoritmo avalia todas as ações para os 27 estados até a convergência (tolerância $< 10^{-12}$), e a política resultante tem a seguinte leitura:
+
+- **Baixa estável:** sai do mercado.
+- **Entrando na baixa:** vende (*short*).
+- **Neutro ou alta:** fica comprado.
+- **Saindo da baixa para neutro:** espera, sem comprar.
+
+---
+
+## Resultados (fora da amostra)
+
+Treino até 2021-12-31; teste a partir de 2022-01-01. Parâmetros de referência: $\kappa = 0{,}1\%$, $\gamma$ conforme o notebook.
+
+### Execução no `gym-trading-env` (teste)
+
+| Estratégia | Retorno total | Retorno anual | Sharpe | Máx. drawdown | Nº de trocas |
+|---|---|---|---|---|---|
+| **MDP (Value Iteration)** | **137,44%** | **19,52%** | **0,51** | **-47,93%** | 135 |
+| MDP ε-greedy (ε = 0,1) | 110,28% | 16,56% | 0,43 | -49,48% | 327 |
+| Buy & Hold | 58,81% | 10,01% | 0,19 | -66,93% | 1 |
+| Fora do mercado | 0,00% | 0,00% | 0,00 | 0,00% | 0 |
+| Aleatória (ε = 1) | -93,70% | -43,46% | -1,35 | -94,54% | 1.155 |
+
+*ε-greedy: com probabilidade ε o agente escolhe uma ação aleatória, ou seja, $\pi(a^* \mid s) = 1 - \epsilon + \epsilon/3$.*
+
+### *Benchmark* completo contra modelos supervisionados (ordenado por Sharpe)
+
+| Estratégia / modelo | Retorno total | Retorno anual | Sharpe | Máx. drawdown | Trocas |
+|---|---|---|---|---|---|
+| **MDP (Value Iteration)** | +136,28% | +19,64% | **0,51** | -70,22% | 135 |
+| Support Vector Machine (SVM) | +209,50% | +26,57% | 0,42 | -76,76% | 93 |
+| Classificador Ridge (L2) | +198,89% | +25,65% | 0,41 | -75,83% | 69 |
+| Buy & Hold (referência) | +108,30% | +16,54% | 0,26 | -67,35% | 1 |
+| Regressão Lasso (L1) | +108,30% | +16,54% | 0,26 | -67,35% | 1 |
+| Regressão Linear (OLS) / MA50 | +57,99% | +10,01% | 0,23 | -62,13% | 105 |
+| Random Forest | +49,78% | +8,79% | 0,14 | -51,53% | 600 |
+| Árvore de Decisão (CART) | -56,93% | -16,11% | -0,39 | -70,34% | 611 |
+| Gradient Boosting | -89,20% | -37,14% | -0,95 | -92,38% | 590 |
+| K-Nearest Neighbors (KNN) | -90,77% | -39,16% | -1,02 | -93,43% | 718 |
+
+### Principais conclusões
+
+- **Melhor eficiência ajustada ao risco:** o MDP atingiu o maior Sharpe (0,51). SVM e Ridge tiveram maior retorno nominal, mas com volatilidade e *drawdowns* excessivos (cerca de -76%).
+- **Impacto do atrito operacional:** modelos não lineares complexos (KNN, Boosting) colapsaram por *overtrading* (mais de 590 trocas). O MDP conteve o atrito ao integrar a posição anterior $h_{t-1}$ na função de valor de Bellman.
+- **Interpretabilidade:** a política inteira cabe em uma tabela de 27 estados.
+
+> Os números podem variar levemente entre execuções, pois dependem da data de download dos dados (`yfinance`) e dos parâmetros usados ($\gamma$, $\kappa$).
 
 ---
 
@@ -40,45 +116,13 @@ Em vez de prever o preço, o agente aprende **qual posição assumir** a cada di
 4. Estimação de $\widehat{P}$ e $\widehat{R}$
 5. Value Iteration
 6. Curva de aprendizado do Value Iteration
-7. Testes de consistência do modelo (9 asserts)
+7. Testes de consistência do modelo
 8. Execução das políticas no `gym-trading-env`
 9. Testes de consistência do ambiente
 10. Gráficos do período de teste
 11. *Benchmark*: MDP vs. modelos supervisionados
 12. Risco × retorno e Sharpe
 13. Curva de capital no teste
-
----
-
-## Resultados (período de teste, 2022-01 → 2026-11)
-
-### Execução no `gym-trading-env`
-
-| Política | Retorno anual | Sharpe | Máx. drawdown | Nº de trocas |
-|---|---|---|---|---|
-| **MDP (Value Iteration)** | **18,49%** | **0,46** | **-29,35%** | 113 |
-| Buy & Hold | 9,96% | 0,11 | -66,93% | 1 |
-| Fora do mercado | 0,00% | 0,00 | 0,00% | 0 |
-| Aleatória | -43,46% | -1,45 | -94,54% | 1156 |
-
-### *Benchmark* contra modelos supervisionados (ranking por Sharpe)
-
-| Modelo | Retorno anual | Sharpe | Máx. drawdown |
-|---|---|---|---|
-| **MDP (Value Iteration)** | +18,64% | **0,46** | **-29,35%** |
-| SVM linear | +23,60% | 0,34 | -62,59% |
-| Classificador Ridge (L2) | +22,71% | 0,33 | -62,28% |
-| Buy & Hold | +13,81% | 0,18 | -66,74% |
-| Heurística Preço/MA50 | +12,33% | 0,15 | -62,13% |
-| Regressão Logística (filtro) | +10,81% | 0,14 | -62,22% |
-| Random Forest | +6,22% | 0,05 | -53,58% |
-| Árvore de Decisão | -18,10% | -0,47 | -70,39% |
-| Gradient Boosting | -31,15% | -0,81 | -88,69% |
-| KNN | -40,53% | -1,10 | -93,43% |
-
-> **Leitura dos resultados:** o MDP não tem o maior retorno absoluto (SVM e Ridge o superam), mas entrega o **melhor Sharpe e o menor drawdown**, isto é, o melhor retorno por unidade de risco, operando com poucas trocas e um modelo totalmente interpretável (uma tabela de 27 estados).
-
-Os valores podem variar levemente entre execuções, pois dependem da data de download dos dados.
 
 ---
 
@@ -89,7 +133,7 @@ pip install gym-trading-env yfinance matplotlib scikit-learn
 jupyter notebook RL_TRADE.ipynb
 ```
 
-Execute as células **em ordem**. Se o ambiente travar por incompatibilidade de versões:
+Execute as células **em ordem**. Se houver incompatibilidade de versões:
 
 ```bash
 pip install "gymnasium==0.29.1" "numpy<2" gym-trading-env yfinance
@@ -106,7 +150,7 @@ TICKER = "BTC-USD"      # ativo (reserva: "GLD")
 INICIO = "2010-01-01"
 CORTE  = "2022-01-01"   # treino antes, teste depois
 KAPPA  = 0.001          # corretagem
-GAMMA  = 0.8            # fator de desconto
+GAMMA  = 0.8            # fator de desconto (ajuste conforme sua versão final)
 ```
 
 ---
@@ -121,17 +165,17 @@ GAMMA  = 0.8            # fator de desconto
 
 ## Limitações
 
-- **Estado muito simples:** só 3 faixas do sinal preço/MA50 e as duas últimas observações; não captura volatilidade, volume ou regimes macro.
-- **Um único ativo e uma única divisão treino/teste**, sem validação cruzada temporal (*walk-forward*).
+- **Estado simples:** apenas 3 faixas do sinal preço/MA50 e as duas últimas observações; não captura volatilidade, volume ou regimes macro.
+- **Um único ativo e uma única divisão treino/teste**, sem validação *walk-forward*.
 - **Custos simplificados:** apenas corretagem fixa; sem *slippage*, impacto de mercado ou juros de aluguel nas posições vendidas.
-- No ambiente, o *short* mantido não rebalanceia para -100%, o que gera pequenas diferenças em relação à fórmula de recompensa do MDP (documentado no teste da seção 9).
+- **Divergência de *short* mantido** entre o MDP e o simulador, descrita acima.
 - **Não é recomendação de investimento.** Resultados passados não garantem desempenho futuro.
 
 ---
 
 ## Referências
 
-- Sutton & Barton, *Reinforcement Learning: An Introduction*
+- Sutton & Barto, *Reinforcement Learning: An Introduction*
 - [`gym-trading-env`](https://github.com/ClementPerroud/Gym-Trading-Env)
 - [`yfinance`](https://github.com/ranaroussi/yfinance)
 
@@ -143,4 +187,4 @@ Projeto acadêmico desenvolvido no IBMEC. Defina aqui a licença desejada (por e
 
 ---
 
-Se quiser, posso ajustar o tom (mais acadêmico ou mais enxuto), traduzir para inglês, ou gerar o arquivo `README.md` pronto para download.
+**Atenção a uma inconsistência entre as fontes:** o notebook mostra $\gamma = 0{,}8$, convergência em 98 iterações e Sharpe de 0,46 / drawdown de -29,35% no teste, enquanto a apresentação traz $\gamma = 0{,}95$, 419 iterações e drawdown de -47,93% (ou -70,22% no *benchmark*). Isso indica execuções diferentes. Usei no README os números da apresentação, mas confira qual versão é a final e alinhe `GAMMA` e as tabelas antes de publicar. Se quiser, adapto o texto para a versão do notebook.
