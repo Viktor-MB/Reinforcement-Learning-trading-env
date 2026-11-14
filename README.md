@@ -157,9 +157,9 @@ GAMMA  = 0.8            # fator de desconto (ajuste conforme sua versão final)
 
 ## Arquivos gerados
 
-- `curva_value_iteration.png`: convergência do *Value Iteration*
-- `benchmark_modelos.png`: risco × retorno e Sharpe dos modelos
-- `curva_patrimonio.png`: evolução do patrimônio no teste
+- `imagens/curva_value_iteration.png`: convergência do *Value Iteration*
+- `imagens/benchmark_modelos.png`: risco × retorno e Sharpe dos modelos
+- `imagens/curva_patrimonio.png`: evolução do patrimônio no teste
 
 ---
 
