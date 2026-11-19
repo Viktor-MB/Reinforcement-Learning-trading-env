@@ -142,13 +142,13 @@
     \end{column}
 
     \begin{column}{0.48\textwidth}
-      \begin{block}{Trading diário}
+      \begin{block}{Trading diário (Yahoo Finance)}
         \begin{altura}{2.4cm}
         \footnotesize
         \begin{itemize}\setlength{\itemsep}{3pt}
           \item 1 decisão por dia
           \item Bitcoin negocia 24h, 7 dias por semana
-          \item $c_t$: preço das 21h de Brasília (Yahoo Finance)
+          \item \textbf{Fechamento: 21h de Brasília} (0h UTC)
           \item 1 ano $=$ 365 dias no Sharpe
         \end{itemize}
         \end{altura}
@@ -459,7 +459,6 @@
           Passagens usadas      & só a primeira & todas \\
           Atualizações de $Q$   & 388.071       & 1.260.000 \\
           Sharpe no treino      & 1,12          & \textbf{1,20} \\
-          Concordância com o VI & 20/27         & 22/27 \\
           \bottomrule
         \end{tabular}
         \end{altura}
@@ -483,61 +482,9 @@
 \end{frame}
 
 % =============================================================
-% SLIDE 8 — POLÍTICA APRENDIDA: MC x VI
+% SLIDE 8 — Q-LEARNING E COMPARAÇÃO DOS MÉTODOS
 % =============================================================
-\begin{frame}{8. Política: Monte Carlo $\times$ \textit{Value Iteration}}
-
-  \begin{columns}[T,onlytextwidth]
-    \begin{column}{0.62\textwidth}
-      \begin{block}{Ação por estado (vermelho: MC diverge do VI)}
-        \begin{altura}{4.5cm}
-        \centering\scriptsize
-        \setlength{\tabcolsep}{3.5pt}
-        \renewcommand{\arraystretch}{1.1}
-        \begin{tabular}{c l ccc ccc}
-          \toprule
-          & & \multicolumn{3}{c}{\textbf{VI} ($h_{t-1}$)} & \multicolumn{3}{c}{\textbf{MC} ($h_{t-1}$)} \\
-          \cmidrule(lr){3-5} \cmidrule(lr){6-8}
-          \textbf{Estado} & \textbf{Regime} & $-1$ & $0$ & $+1$ & $-1$ & $0$ & $+1$ \\
-          \midrule
-          (0,0) & Baixa estável      & $0$  & $0$  & $+1$ & $0$         & $0$         & $+1$ \\
-          (0,1) & Neutro $\to$ Baixa & $-1$ & $-1$ & $-1$ & $-1$        & $-1$        & $\dif{0}$ \\
-          (0,2) & Alta $\to$ Baixa   & $-1$ & $0$  & $+1$ & $\dif{0}$   & $0$         & $\dif{0}$ \\
-          \midrule
-          (1,0) & Baixa $\to$ Neutro & $-1$ & $0$  & $0$  & $\dif{0}$   & $0$         & $\dif{-1}$ \\
-          (1,1) & Neutro estável     & $0$  & $0$  & $+1$ & $0$         & $0$         & $+1$ \\
-          (1,2) & Alta $\to$ Neutro  & $+1$ & $+1$ & $+1$ & $+1$        & $+1$        & $+1$ \\
-          \midrule
-          (2,0) & Baixa $\to$ Alta   & $-1$ & $-1$ & $-1$ & $-1$        & $-1$        & $-1$ \\
-          (2,1) & Neutro $\to$ Alta  & $+1$ & $+1$ & $+1$ & $+1$        & $+1$        & $+1$ \\
-          (2,2) & Alta estável       & $+1$ & $+1$ & $+1$ & $+1$        & $+1$        & $+1$ \\
-          \bottomrule
-        \end{tabular}
-        \end{altura}
-      \end{block}
-    \end{column}
-
-    \begin{column}{0.34\textwidth}
-      \begin{block}{Leitura}
-        \begin{altura}{4.5cm}
-        \footnotesize
-        \begin{itemize}\setlength{\itemsep}{3pt}
-          \item \textbf{22/27} estados iguais
-          \item Alta e neutro: mesma ação
-          \item Diferenças só perto da baixa
-          \item $(0,2)$ nunca ocorre no treino
-        \end{itemize}
-        \end{altura}
-      \end{block}
-    \end{column}
-  \end{columns}
-
-\end{frame}
-
-% =============================================================
-% SLIDE 9 — Q-LEARNING E COMPARAÇÃO DOS MÉTODOS
-% =============================================================
-\begin{frame}{9. Q-learning e Comparação dos Métodos}
+\begin{frame}{8. Q-learning e Comparação dos Métodos}
 
   \begin{block}{Q-learning: atualiza a cada passo (\textit{bootstrap}), mesmos episódios do MC}
     \[
@@ -562,8 +509,6 @@
       Aprende                  & --                                                        & \textit{on-policy}        & \textit{off-policy} \\
       \midrule
       Custo do treino          & 98 iterações                                              & 1.260.000 atualizações    & 2.520.000 atualizações \\
-      Concordância com o VI    & 27/27                                                     & 22/27                     & 21/27 \\
-      Erro $|Q - Q^*|$         & 0                                                         & 0,0073                    & \textbf{0,0028} \\
       Sharpe no treino         & 1,09                                                      & 1,20                      & 1,37 \\
       \bottomrule
     \end{tabular}
@@ -572,49 +517,50 @@
 \end{frame}
 
 % =============================================================
-% SLIDE 10 — POLÍTICA APRENDIDA: Q-LEARNING x VI
+% SLIDE 9 — POLÍTICA APRENDIDA PELOS TRÊS MÉTODOS
 % =============================================================
-\begin{frame}{10. Política: Q-learning $\times$ \textit{Value Iteration}}
+\begin{frame}{9. Política Aprendida pelos Três Métodos}
 
   \begin{columns}[T,onlytextwidth]
-    \begin{column}{0.62\textwidth}
-      \begin{block}{Ação por estado (vermelho: Q-learning diverge do VI)}
+    \begin{column}{0.66\textwidth}
+      \begin{block}{Ação por estado (vermelho: os métodos discordam)}
         \begin{altura}{4.5cm}
         \centering\scriptsize
-        \setlength{\tabcolsep}{3.5pt}
+        \setlength{\tabcolsep}{3pt}
         \renewcommand{\arraystretch}{1.1}
-        \begin{tabular}{c l ccc ccc}
+        \begin{tabular}{c l ccc ccc ccc}
           \toprule
-          & & \multicolumn{3}{c}{\textbf{VI} ($h_{t-1}$)} & \multicolumn{3}{c}{\textbf{QL} ($h_{t-1}$)} \\
-          \cmidrule(lr){3-5} \cmidrule(lr){6-8}
-          \textbf{Estado} & \textbf{Regime} & $-1$ & $0$ & $+1$ & $-1$ & $0$ & $+1$ \\
+          & & \multicolumn{3}{c}{\textbf{VI} ($h_{t-1}$)} & \multicolumn{3}{c}{\textbf{MC} ($h_{t-1}$)} & \multicolumn{3}{c}{\textbf{QL} ($h_{t-1}$)} \\
+          \cmidrule(lr){3-5} \cmidrule(lr){6-8} \cmidrule(lr){9-11}
+          \textbf{Estado} & \textbf{Regime} & $-1$ & $0$ & $+1$ & $-1$ & $0$ & $+1$ & $-1$ & $0$ & $+1$ \\
           \midrule
-          (0,0) & Baixa estável      & $0$  & $0$  & $+1$ & $0$         & $0$         & $+1$ \\
-          (0,1) & Neutro $\to$ Baixa & $-1$ & $-1$ & $-1$ & $-1$        & $-1$        & $\dif{0}$ \\
-          (0,2) & Alta $\to$ Baixa   & $-1$ & $0$  & $+1$ & $\dif{0}$   & $0$         & $\dif{0}$ \\
+          (0,0) & Baixa estável        & $0$ & $0$ & $+1$ & $0$ & $0$ & $+1$ & $0$ & $0$ & $+1$ \\
+          (0,1) & Neutro $\to$ Baixa   & $-1$ & $-1$ & $\dif{-1}$ & $-1$ & $-1$ & $\dif{0}$ & $-1$ & $-1$ & $\dif{0}$ \\
+          (0,2) & Alta $\to$ Baixa     & $\dif{-1}$ & $0$ & $\dif{+1}$ & $\dif{0}$ & $0$ & $\dif{0}$ & $\dif{0}$ & $0$ & $\dif{0}$ \\
           \midrule
-          (1,0) & Baixa $\to$ Neutro & $-1$ & $0$  & $0$  & $\dif{0}$   & $\dif{-1}$  & $0$ \\
-          (1,1) & Neutro estável     & $0$  & $0$  & $+1$ & $0$         & $\dif{+1}$  & $+1$ \\
-          (1,2) & Alta $\to$ Neutro  & $+1$ & $+1$ & $+1$ & $+1$        & $+1$        & $+1$ \\
+          (1,0) & Baixa $\to$ Neutro   & $\dif{-1}$ & $\dif{0}$ & $\dif{0}$ & $\dif{0}$ & $\dif{0}$ & $\dif{-1}$ & $\dif{0}$ & $\dif{-1}$ & $\dif{0}$ \\
+          (1,1) & Neutro estável       & $0$ & $\dif{0}$ & $+1$ & $0$ & $\dif{0}$ & $+1$ & $0$ & $\dif{+1}$ & $+1$ \\
+          (1,2) & Alta $\to$ Neutro    & $+1$ & $+1$ & $+1$ & $+1$ & $+1$ & $+1$ & $+1$ & $+1$ & $+1$ \\
           \midrule
-          (2,0) & Baixa $\to$ Alta   & $-1$ & $-1$ & $-1$ & $-1$        & $-1$        & $-1$ \\
-          (2,1) & Neutro $\to$ Alta  & $+1$ & $+1$ & $+1$ & $+1$        & $+1$        & $+1$ \\
-          (2,2) & Alta estável       & $+1$ & $+1$ & $+1$ & $+1$        & $+1$        & $+1$ \\
+          (2,0) & Baixa $\to$ Alta     & $-1$ & $-1$ & $-1$ & $-1$ & $-1$ & $-1$ & $-1$ & $-1$ & $-1$ \\
+          (2,1) & Neutro $\to$ Alta    & $+1$ & $+1$ & $+1$ & $+1$ & $+1$ & $+1$ & $+1$ & $+1$ & $+1$ \\
+          (2,2) & Alta estável         & $+1$ & $+1$ & $+1$ & $+1$ & $+1$ & $+1$ & $+1$ & $+1$ & $+1$ \\
           \bottomrule
         \end{tabular}
         \end{altura}
       \end{block}
     \end{column}
 
-    \begin{column}{0.34\textwidth}
+    \begin{column}{0.30\textwidth}
       \begin{block}{Leitura}
         \begin{altura}{4.5cm}
         \footnotesize
         \begin{itemize}\setlength{\itemsep}{3pt}
-          \item \textbf{21/27} estados iguais
-          \item Neutro estável, fora: \textbf{compra}
-          \item 190 trocas no teste (VI: 113)
+          \item Os três iguais em \textbf{20/27} estados
           \item MC e QL: 24/27 iguais
+          \item Alta: mesma ação nos três
+          \item Diferenças perto da baixa e no neutro
+          \item $(0,2)$ nunca ocorre no treino
         \end{itemize}
         \end{altura}
       \end{block}
@@ -624,16 +570,17 @@
 \end{frame}
 
 % =============================================================
-% SLIDE 11 — CURVAS DE APRENDIZADO (5 SEMENTES)
+% SLIDE 10 — CURVAS DE APRENDIZADO (5 SEMENTES)
 % =============================================================
-\begin{frame}{11. Curvas de Aprendizado: Monte Carlo $\times$ Q-learning}
+\begin{frame}{10. Convergência: Monte Carlo $\times$ Q-learning}
 
   \centering
-  \includegraphics[width=\textwidth]{curva_sementes.png}
+  \includegraphics[width=0.94\textwidth]{curva_sementes.png}
 
   \vskip 0.1cm
   \raggedright\small
   \begin{itemize}\setlength{\itemsep}{2pt}
+    \item Referência teórica: $Q^*$ do VI, mesmo MDP
     \item Q-learning chega mais perto de $Q^*$: erro 0,005 (MC: 0,007)
     \item Mas varia mais entre as 5 sementes
   \end{itemize}
@@ -645,9 +592,9 @@
 % #############################################################
 
 % =============================================================
-% SLIDE 12 — MÉTRICAS DE AVALIAÇÃO
+% SLIDE 11 — MÉTRICAS DE AVALIAÇÃO
 % =============================================================
-\begin{frame}{12. Métricas de Avaliação}
+\begin{frame}{11. Métricas de Avaliação}
 
   \begin{block}{Métricas de risco e retorno}
     \centering\small
@@ -677,9 +624,9 @@
 \end{frame}
 
 % =============================================================
-% SLIDE 13 — RESULTADOS NO SIMULADOR
+% SLIDE 12 — RESULTADOS NO SIMULADOR
 % =============================================================
-\begin{frame}{13. Resultados no \texttt{gym-trading-env}}
+\begin{frame}{12. Resultados no \texttt{gym-trading-env}}
 
   \begin{block}{BTC-USD, $\kappa = 0{,}1\%$, $\gamma = 0{,}8$}
     \centering\scriptsize
@@ -690,15 +637,15 @@
       \textbf{Estratégia} & \textbf{Retorno Total} & \textbf{Retorno Anual} & \textbf{Sharpe} & \textbf{Max Drawdown} & \textbf{Calmar} & \textbf{Trocas} \\
       \midrule
       \multicolumn{7}{l}{\textit{Teste (2022 a 2026)}} \\
-      \textbf{MDP (Value Iteration)} & \textbf{127,80\%} & \textbf{18,41\%} & \textbf{0,46} & \textbf{-29,35\%} & \textbf{0,63} & \textbf{113} \\
+      MDP (Value Iteration)          & 127,80\%          & 18,41\%          & 0,46          & -29,35\%          & 0,63          & 113 \\
       Monte Carlo (every-visit)      & 119,47\%          & 17,51\%          & 0,44          & -26,95\%          & 0,65          & 108 \\
       Q-learning                     & 86,39\%           & 13,64\%          & 0,26          & -51,25\%          & 0,27          & 190 \\
-      Buy \& Hold                    & 38,07\%           & 6,85\%           & 0,05          & -66,93\%          & 0,10          & 1 \\
+      Buy \& Hold                    & 37,05\%           & 6,68\%           & 0,05          & -66,93\%          & 0,10          & 1 \\
       Fora do Mercado                & 0,00\%            & 0,00\%           & 0,00          & 0,00\%            & --            & 0 \\
-      Aleatória                      & -93,79\%          & -43,47\%         & -1,45         & -94,54\%          & -0,46         & 1.162 \\
+      Aleatória                      & -93,83\%          & -43,56\%         & -1,45         & -94,54\%          & -0,46         & 1.162 \\
       \midrule
       \multicolumn{7}{l}{\textit{Treino (2014 a 2021)}} \\
-      \textbf{MDP (Value Iteration)} & \textbf{6.947,44\%} & \textbf{81,24\%} & \textbf{1,09} & \textbf{-50,59\%} & \textbf{1,61} & \textbf{140} \\
+      MDP (Value Iteration)          & 6.947,44\%          & 81,24\%          & 1,09          & -50,59\%          & 1,61          & 140 \\
       Monte Carlo (every-visit)      & 9.802,30\%          & 90,06\%          & 1,20          & -52,95\%          & 1,70          & 119 \\
       Q-learning                     & 26.866,84\%         & 118,62\%         & 1,37          & -69,05\%          & 1,72          & 195 \\
       Buy \& Hold                    & 13.144,05\%         & 97,94\%          & 0,90          & -83,40\%          & 1,17          & 1 \\
@@ -711,17 +658,17 @@
 \end{frame}
 
 % =============================================================
-% SLIDE 14 — DESEMPENHO NO TESTE (GRÁFICO)
+% SLIDE 13 — DESEMPENHO NO TESTE (GRÁFICO)
 % =============================================================
-\begin{frame}{14. Desempenho no Período de Teste}
+\begin{frame}{13. Desempenho no Período de Teste}
   \centering
   \includegraphics[height=0.86\textheight]{grafico_teste.png}
 \end{frame}
 
 % =============================================================
-% SLIDE 15 — POLÍTICA GULOSA x EPSILON-GREEDY
+% SLIDE 14 — POLÍTICA GULOSA x EPSILON-GREEDY
 % =============================================================
-\begin{frame}{15. Política Gulosa $\times$ $\varepsilon$-greedy}
+\begin{frame}{14. Política Gulosa $\times$ $\varepsilon$-greedy}
 
   \begin{columns}[T,onlytextwidth]
     \begin{column}{0.48\textwidth}
@@ -752,13 +699,13 @@
       \textbf{Política} & \textbf{Sharpe} & \textbf{Max Drawdown} & \textbf{Calmar} & \textbf{Trocas} & \textbf{$\varepsilon >$ gulosa (\% sementes)} \\
       \midrule
       \textbf{MDP: gulosa}                    & \textbf{0,46} & \textbf{-29,35\%} & \textbf{0,63} & \textbf{113} & --          \\
-      MDP: $\varepsilon$-greedy               & 0,21          & -49,75\%          & 0,29          & 286          & 24\%        \\
+      MDP: $\varepsilon$-greedy               & 0,20          & -49,77\%          & 0,29          & 286          & 24\%        \\
       \midrule
       \textbf{Monte Carlo: gulosa}            & \textbf{0,44} & \textbf{-26,95\%} & \textbf{0,65} & \textbf{108} & --          \\
-      Monte Carlo: $\varepsilon$-greedy       & 0,15          & -50,55\%          & 0,24          & 289          & 21\%        \\
+      Monte Carlo: $\varepsilon$-greedy       & 0,14          & -50,57\%          & 0,24          & 289          & 21\%        \\
       \midrule
       \textbf{Q-learning: gulosa}             & \textbf{0,26} & \textbf{-51,25\%} & \textbf{0,27} & \textbf{190} & --          \\
-      Q-learning: $\varepsilon$-greedy        & 0,04          & -59,21\%          & 0,13          & 373          & 24\%        \\
+      Q-learning: $\varepsilon$-greedy        & 0,04          & -59,21\%          & 0,13          & 373          & 23\%        \\
       \bottomrule
     \end{tabular}
   \end{block}
@@ -772,9 +719,9 @@
 \end{frame}
 
 % =============================================================
-% SLIDE 16 — MONTE CARLO E Q-LEARNING COM 5 SEMENTES
+% SLIDE 15 — MONTE CARLO E Q-LEARNING COM 5 SEMENTES
 % =============================================================
-\begin{frame}{16. Monte Carlo e Q-learning com 5 Sementes}
+\begin{frame}{15. Monte Carlo e Q-learning com 5 Sementes}
 
   \begin{block}{5 treinos de 30.000 episódios, cada um com sorteios diferentes (sementes 42 a 46)}
     \centering\scriptsize
@@ -811,9 +758,9 @@
 \end{frame}
 
 % =============================================================
-% SLIDE 17 — BENCHMARK: RL VS MODELOS ECONOMÉTRICOS
+% SLIDE 16 — BENCHMARK: RL VS MODELOS ECONOMÉTRICOS
 % =============================================================
-\begin{frame}{17. Benchmark no Teste: RL $\times$ Modelos Econométricos}
+\begin{frame}{16. Benchmark no Teste: RL $\times$ Modelos Econométricos}
 
   \begin{block}{Ranking por Sharpe \quad (Calmar = retorno anual / $|$max drawdown$|$)}
     \centering\footnotesize
@@ -827,13 +774,13 @@
       \textbf{Monte Carlo}             & \textbf{+119,46\%} & \textbf{0,44} & \textbf{-26,95\%} & \textbf{0,65} & \textbf{108} \\
       \textbf{Q-learning}              & \textbf{+86,08\%}  & \textbf{0,26} & \textbf{-51,28\%} & \textbf{0,27} & \textbf{190} \\
       \midrule
-      AR(1)                            & +120,60\% & 0,25  & -73,07\% & 0,24  & 49  \\
-      ARMA(1,1)                        & +109,47\% & 0,22  & -72,85\% & 0,23  & 43  \\
-      Probit                           & +61,68\%  & 0,12  & -72,95\% & 0,14  & 113 \\
-      Logit                            & +57,52\%  & 0,11  & -72,95\% & 0,13  & 115 \\
-      Buy \& Hold (passeio aleatório)  & +38,07\%  & 0,05  & -66,93\% & 0,10  & 1   \\
-      Markov-switching (Hamilton)      & +38,07\%  & 0,05  & -66,93\% & 0,10  & 1   \\
-      Regressão preditiva (OLS)        & -49,70\%  & -0,36 & -77,59\% & -0,17 & 224 \\
+      AR(1)                            & +118,97\% & 0,24  & -73,07\% & 0,24  & 49  \\
+      ARMA(1,1)                        & +107,92\% & 0,22  & -72,85\% & 0,22  & 43  \\
+      Probit                           & +60,49\%  & 0,12  & -72,95\% & 0,14  & 113 \\
+      Logit                            & +56,35\%  & 0,11  & -72,95\% & 0,13  & 115 \\
+      Buy \& Hold (passeio aleatório)  & +37,05\%  & 0,05  & -66,93\% & 0,10  & 1   \\
+      Markov-switching (Hamilton)      & +37,05\%  & 0,05  & -66,93\% & 0,10  & 1   \\
+      Regressão preditiva (OLS)        & -50,08\%  & -0,36 & -77,59\% & -0,17 & 224 \\
       \bottomrule
     \end{tabular}
   \end{block}
@@ -847,9 +794,9 @@
 \end{frame}
 
 % =============================================================
-% SLIDE 18 — WALK-FORWARD: A IDEIA
+% SLIDE 17 — WALK-FORWARD: A IDEIA
 % =============================================================
-\begin{frame}{18. Walk-forward: Retreinar ao Longo do Tempo}
+\begin{frame}{17. Walk-forward: Retreinar ao Longo do Tempo}
 
   \centering
   \begin{tikzpicture}[x=1cm, y=1cm, font=\footnotesize]
@@ -907,9 +854,9 @@
 \end{frame}
 
 % =============================================================
-% SLIDE 19 — WALK-FORWARD: RESULTADO
+% SLIDE 18 — WALK-FORWARD: RESULTADO
 % =============================================================
-\begin{frame}{19. Walk-forward: Resultado no Teste}
+\begin{frame}{18. Walk-forward: Resultado no Teste}
 
   \begin{block}{Sharpe no teste (2022 a 2026), retreinando com todo o histórico}
     \centering\small
@@ -921,10 +868,10 @@
       \cmidrule(lr){3-5}
       \textbf{Modelo} & \textbf{retreina} & 12 meses & 6 meses & 3 meses & \textbf{na validação} \\
       \midrule
-      \textbf{MDP (VI)} & \textbf{0,46} & 0,28    & 0,35    & 0,07    & nunca \\
+      MDP (VI)          & 0,46          & 0,28    & 0,35    & 0,07    & nunca \\
       Monte Carlo       & 0,44          & 0,14    & 0,18    & 0,26    & 3 meses \\
       Q-learning        & 0,26          & $-$0,03 & 0,25    & $-$0,15 & 3 meses \\
-      AR(1)             & 0,25          & 0,20    & 0,08    & 0,08    & 12 meses \\
+      AR(1)             & 0,24          & 0,19    & 0,07    & 0,08    & 12 meses \\
       Buy \& Hold       & 0,05          & 0,05    & 0,05    & 0,05    & -- \\
       \bottomrule
     \end{tabular}

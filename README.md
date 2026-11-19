@@ -113,9 +113,9 @@ Treino: 2014-11 a 2021-12. Teste: 2022-01 a 2026-11. $\kappa = 0{,}1\%$, $\gamma
 | **MDP (Value Iteration)** | **127,80%** | **18,41%** | **0,46** | **−29,35%** | 0,63 | 113 |
 | Monte Carlo (every-visit) | 119,47% | 17,51% | 0,44 | −26,95% | 0,65 | 108 |
 | Q-learning | 86,39% | 13,64% | 0,26 | −51,25% | 0,27 | 190 |
-| Buy & Hold | 38,07% | 6,85% | 0,05 | −66,93% | 0,10 | 1 |
+| Buy & Hold | 37,05% | 6,68% | 0,05 | −66,93% | 0,10 | 1 |
 | Fora do mercado | 0,00% | 0,00% | 0,00 | 0,00% | – | 0 |
-| Aleatória | −93,79% | −43,47% | −1,45 | −94,54% | −0,46 | 1.162 |
+| Aleatória | −93,83% | −43,56% | −1,45 | −94,54% | −0,46 | 1.162 |
 
 O teste começa perto de um topo (BTC a ~US$ 47 mil em jan/2022, ~US$ 16 mil no fim de 2022). Por isso o Buy & Hold rende pouco, e o foco está no retorno ajustado ao risco.
 
@@ -123,9 +123,9 @@ O teste começa perto de um topo (BTC a ~US$ 47 mil em jan/2022, ~US$ 16 mil no 
 
 | Política | Sharpe | Max drawdown | Trocas | ε vence a gulosa em |
 |---|---|---|---|---|
-| MDP: gulosa / ε-greedy | 0,46 / 0,21 | −29,35% / −49,75% | 113 / 286 | 24% das sementes |
-| Monte Carlo: gulosa / ε-greedy | 0,44 / 0,15 | −26,95% / −50,55% | 108 / 289 | 21% das sementes |
-| Q-learning: gulosa / ε-greedy | 0,26 / 0,04 | −51,25% / −59,21% | 190 / 373 | 24% das sementes |
+| MDP: gulosa / ε-greedy | 0,46 / 0,20 | −29,35% / −49,77% | 113 / 286 | 24% das sementes |
+| Monte Carlo: gulosa / ε-greedy | 0,44 / 0,14 | −26,95% / −50,57% | 108 / 289 | 21% das sementes |
+| Q-learning: gulosa / ε-greedy | 0,26 / 0,04 | −51,25% / −59,21% | 190 / 373 | 23% das sementes |
 
 Explorar serve para aprender, não para operar.
 
@@ -147,13 +147,13 @@ Explorar serve para aprender, não para operar.
 | **MDP (Value Iteration)** | +126,86% | **0,46** | −29,35% | 0,62 | 113 |
 | Monte Carlo | +119,46% | 0,44 | −26,95% | 0,65 | 108 |
 | Q-learning | +86,08% | 0,26 | −51,28% | 0,27 | 190 |
-| AR(1) | +120,60% | 0,25 | −73,07% | 0,24 | 49 |
-| ARMA(1,1) | +109,47% | 0,22 | −72,85% | 0,23 | 43 |
-| Probit | +61,68% | 0,12 | −72,95% | 0,14 | 113 |
-| Logit | +57,52% | 0,11 | −72,95% | 0,13 | 115 |
-| Buy & Hold (passeio aleatório) | +38,07% | 0,05 | −66,93% | 0,10 | 1 |
-| Markov-switching (Hamilton) | +38,07% | 0,05 | −66,93% | 0,10 | 1 |
-| Regressão preditiva (OLS) | −49,70% | −0,36 | −77,59% | −0,17 | 224 |
+| AR(1) | +118,97% | 0,24 | −73,07% | 0,24 | 49 |
+| ARMA(1,1) | +107,92% | 0,22 | −72,85% | 0,22 | 43 |
+| Probit | +60,49% | 0,12 | −72,95% | 0,14 | 113 |
+| Logit | +56,35% | 0,11 | −72,95% | 0,13 | 115 |
+| Buy & Hold (passeio aleatório) | +37,05% | 0,05 | −66,93% | 0,10 | 1 |
+| Markov-switching (Hamilton) | +37,05% | 0,05 | −66,93% | 0,10 | 1 |
+| Regressão preditiva (OLS) | −50,08% | −0,36 | −77,59% | −0,17 | 224 |
 
 O *benchmark* usa um simulador próprio, com as mesmas fórmulas. Por isso há diferenças pequenas em relação à tabela do `gym-trading-env`.
 
@@ -168,7 +168,7 @@ O *benchmark* usa um simulador próprio, com as mesmas fórmulas. Por isso há d
 | **MDP (VI)** | **0,46** | 0,28 | 0,35 | 0,07 | nunca |
 | Monte Carlo | 0,44 | 0,14 | 0,18 | 0,26 | 3 meses |
 | Q-learning | 0,26 | −0,03 | 0,25 | −0,15 | 3 meses |
-| AR(1) | 0,25 | 0,20 | 0,08 | 0,08 | 12 meses |
+| AR(1) | 0,24 | 0,19 | 0,07 | 0,08 | 12 meses |
 
 *Sharpe no teste, janela expansiva.* Retreinar não melhorou nenhum modelo. Cada retreino recalcula os tercis e as probabilidades, e a política troca de ação.
 
@@ -184,7 +184,7 @@ O *benchmark* usa um simulador próprio, com as mesmas fórmulas. Por isso há d
 
 ---
 
-## Estrutura do notebook (`RL_TRADE_Final_MonteCarlo.ipynb`)
+## Estrutura do notebook (`RL_TRADE.ipynb`)
 
 - **Parte I. Preparação:** 1. Instalação · 2. Imports e parâmetros · 3. Dados e estados (com o histograma dos tercis)
 - **Parte II. Value Iteration:** 4. Estimando o modelo · 5. Value Iteration · 6. Curva de aprendizado · 7. Testes do modelo
@@ -198,7 +198,7 @@ O *benchmark* usa um simulador próprio, com as mesmas fórmulas. Por isso há d
 
 ```bash
 pip install gym-trading-env yfinance matplotlib statsmodels
-jupyter notebook RL_TRADE_Final_MonteCarlo.ipynb
+jupyter notebook RL_TRADE.ipynb
 ```
 
 - Execute as células **em ordem**. O notebook inteiro leva cerca de 10 minutos.
@@ -227,7 +227,7 @@ SEED   = 42             # sementes 42 a 46 na análise de variância
 
 ## Arquivos
 
-- `RL_TRADE_Final_MonteCarlo.ipynb`: notebook principal
+- `RL_TRADE.ipynb`: notebook principal (todo o código e os resultados)
 - `apresentacao.tex`: slides em Beamer
 - `imagens/`: figuras geradas pelo notebook
   - `limiares_tercis.png`: histograma de $x_t$ no treino com os tercis
@@ -263,4 +263,4 @@ SEED   = 42             # sementes 42 a 46 na análise de variância
 
 ## Licença
 
-Projeto acadêmico desenvolvido no IBMEC. Defina aqui a licença desejada (por exemplo, MIT).
+Projeto acadêmico desenvolvido no IBMEC, para fins educacionais.
