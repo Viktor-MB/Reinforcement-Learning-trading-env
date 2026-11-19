@@ -637,20 +637,20 @@
       \textbf{Estratégia} & \textbf{Retorno Total} & \textbf{Retorno Anual} & \textbf{Sharpe} & \textbf{Max Drawdown} & \textbf{Calmar} & \textbf{Trocas} \\
       \midrule
       \multicolumn{7}{l}{\textit{Teste (2022 a 2026)}} \\
-      MDP (Value Iteration)          & 127,80\%          & 18,41\%          & 0,46          & -29,35\%          & 0,63          & 113 \\
-      Monte Carlo (every-visit)      & 119,47\%          & 17,51\%          & 0,44          & -26,95\%          & 0,65          & 108 \\
-      Q-learning                     & 86,39\%           & 13,64\%          & 0,26          & -51,25\%          & 0,27          & 190 \\
-      Buy \& Hold                    & 37,05\%           & 6,68\%           & 0,05          & -66,93\%          & 0,10          & 1 \\
+      MDP (Value Iteration)          & 127,80\%          & 18,37\%          & 0,46          & -29,35\%          & 0,63          & 113 \\
+      Monte Carlo (every-visit)      & 119,47\%          & 17,47\%          & 0,44          & -26,95\%          & 0,65          & 108 \\
+      Q-learning                     & 86,39\%           & 13,60\%          & 0,26          & -51,25\%          & 0,27          & 190 \\
+      Buy \& Hold                    & 31,95\%           & 5,84\%           & 0,04          & -66,93\%          & 0,09          & 1 \\
       Fora do Mercado                & 0,00\%            & 0,00\%           & 0,00          & 0,00\%            & --            & 0 \\
-      Aleatória                      & -93,83\%          & -43,56\%         & -1,45         & -94,54\%          & -0,46         & 1.162 \\
+      Aleatória                      & -93,85\%          & -43,52\%         & -1,45         & -94,58\%          & -0,46         & 1.163 \\
       \midrule
       \multicolumn{7}{l}{\textit{Treino (2014 a 2021)}} \\
-      MDP (Value Iteration)          & 6.947,44\%          & 81,24\%          & 1,09          & -50,59\%          & 1,61          & 140 \\
-      Monte Carlo (every-visit)      & 9.802,30\%          & 90,06\%          & 1,20          & -52,95\%          & 1,70          & 119 \\
-      Q-learning                     & 26.866,84\%         & 118,62\%         & 1,37          & -69,05\%          & 1,72          & 195 \\
-      Buy \& Hold                    & 13.144,05\%         & 97,94\%          & 0,90          & -83,40\%          & 1,17          & 1 \\
-      Fora do Mercado                & 0,00\%              & 0,00\%           & 0,00          & 0,00\%            & --            & 0 \\
-      Aleatória                      & -88,73\%            & -26,29\%         & -0,52         & -95,74\%          & -0,27         & 1.721 \\
+      MDP (Value Iteration)          & 6.947,44\%        & 81,24\%          & 1,09          & -50,59\%          & 1,61          & 140 \\
+      Monte Carlo (every-visit)      & 9.802,30\%        & 90,06\%          & 1,20          & -52,95\%          & 1,70          & 119 \\
+      Q-learning                     & 26.866,84\%       & 118,62\%         & 1,37          & -69,05\%          & 1,72          & 195 \\
+      Buy \& Hold                    & 13.144,05\%       & 97,94\%          & 0,90          & -83,40\%          & 1,17          & 1 \\
+      Fora do Mercado                & 0,00\%            & 0,00\%           & 0,00          & 0,00\%            & --            & 0 \\
+      Aleatória                      & -88,73\%          & -26,29\%         & -0,52         & -95,74\%          & -0,27         & 1.721 \\
       \bottomrule
     \end{tabular}
   \end{block}
@@ -658,17 +658,56 @@
 \end{frame}
 
 % =============================================================
-% SLIDE 13 — DESEMPENHO NO TESTE (GRÁFICO)
+% SLIDE 13 — COM E SEM CORRETAGEM
 % =============================================================
-\begin{frame}{13. Desempenho no Período de Teste}
+\begin{frame}{13. Com e Sem Corretagem no Teste}
+
+  \begin{block}{Mesmas políticas no teste (2022 a 2026), com e sem corretagem}
+    \centering\scriptsize
+    \setlength{\tabcolsep}{5pt}
+    \renewcommand{\arraystretch}{1.0}
+    \begin{tabular}{l cccccc}
+      \toprule
+      \textbf{Estratégia} & \textbf{Retorno Total} & \textbf{Retorno Anual} & \textbf{Sharpe} & \textbf{Max Drawdown} & \textbf{Calmar} & \textbf{Trocas} \\
+      \midrule
+      \multicolumn{7}{l}{\textit{Com corretagem ($\kappa = 0{,}1\%$ por troca)}} \\
+      MDP (Value Iteration)      & 127,80\%  & 18,37\%  & 0,46  & -29,35\%  & 0,63  & 113 \\
+      Monte Carlo (every-visit)  & 119,47\%  & 17,47\%  & 0,44  & -26,95\%  & 0,65  & 108 \\
+      Q-learning                 & 86,39\%   & 13,60\%  & 0,26  & -51,25\%  & 0,27  & 190 \\
+      Buy \& Hold                & 31,95\%   & 5,84\%   & 0,04  & -66,93\%  & 0,09  & 1 \\
+      Aleatória                  & -93,85\%  & -43,52\% & -1,45 & -94,58\%  & -0,46 & 1.163 \\
+      \midrule
+      \multicolumn{7}{l}{\textit{Sem corretagem ($\kappa = 0$)}} \\
+      MDP (Value Iteration)      & 158,32\%  & 21,46\%  & 0,55  & -28,42\%  & 0,75  & 113 \\
+      Monte Carlo (every-visit)  & 144,45\%  & 20,09\%  & 0,51  & -26,29\%  & 0,76  & 108 \\
+      Q-learning                 & 125,43\%  & 18,12\%  & 0,37  & -48,39\%  & 0,37  & 190 \\
+      Buy \& Hold                & 32,09\%   & 5,87\%   & 0,04  & -66,89\%  & 0,09  & 1 \\
+      Aleatória                  & -70,23\%  & -21,98\% & -0,68 & -74,63\%  & -0,29 & 1.163 \\
+      \bottomrule
+    \end{tabular}
+  \end{block}
+
+  \small
+  \begin{itemize}\setlength{\itemsep}{2pt}
+    \item Mesmas ações: a diferença é só o custo das trocas
+    \item Quem troca mais paga mais: Q-learning perde 4,5 p.p. ao ano
+    \item A ordem entre as estratégias não muda
+  \end{itemize}
+
+\end{frame}
+
+% =============================================================
+% SLIDE 14 — DESEMPENHO NO TESTE (GRÁFICO)
+% =============================================================
+\begin{frame}{14. Desempenho no Período de Teste}
   \centering
   \includegraphics[height=0.86\textheight]{grafico_teste.png}
 \end{frame}
 
 % =============================================================
-% SLIDE 14 — POLÍTICA GULOSA x EPSILON-GREEDY
+% SLIDE 15 — POLÍTICA GULOSA x EPSILON-GREEDY
 % =============================================================
-\begin{frame}{14. Política Gulosa $\times$ $\varepsilon$-greedy}
+\begin{frame}{15. Política Gulosa $\times$ $\varepsilon$-greedy}
 
   \begin{columns}[T,onlytextwidth]
     \begin{column}{0.48\textwidth}
@@ -699,13 +738,13 @@
       \textbf{Política} & \textbf{Sharpe} & \textbf{Max Drawdown} & \textbf{Calmar} & \textbf{Trocas} & \textbf{$\varepsilon >$ gulosa (\% sementes)} \\
       \midrule
       \textbf{MDP: gulosa}                    & \textbf{0,46} & \textbf{-29,35\%} & \textbf{0,63} & \textbf{113} & --          \\
-      MDP: $\varepsilon$-greedy               & 0,20          & -49,77\%          & 0,29          & 286          & 24\%        \\
+      MDP: $\varepsilon$-greedy               & 0,20          & -49,87\%          & 0,29          & 286          & 24\%        \\
       \midrule
       \textbf{Monte Carlo: gulosa}            & \textbf{0,44} & \textbf{-26,95\%} & \textbf{0,65} & \textbf{108} & --          \\
-      Monte Carlo: $\varepsilon$-greedy       & 0,14          & -50,57\%          & 0,24          & 289          & 21\%        \\
+      Monte Carlo: $\varepsilon$-greedy       & 0,14          & -50,67\%          & 0,24          & 289          & 21\%        \\
       \midrule
       \textbf{Q-learning: gulosa}             & \textbf{0,26} & \textbf{-51,25\%} & \textbf{0,27} & \textbf{190} & --          \\
-      Q-learning: $\varepsilon$-greedy        & 0,04          & -59,21\%          & 0,13          & 373          & 23\%        \\
+      Q-learning: $\varepsilon$-greedy        & 0,04          & -59,22\%          & 0,13          & 373          & 23\%        \\
       \bottomrule
     \end{tabular}
   \end{block}
@@ -719,9 +758,9 @@
 \end{frame}
 
 % =============================================================
-% SLIDE 15 — MONTE CARLO E Q-LEARNING COM 5 SEMENTES
+% SLIDE 16 — MONTE CARLO E Q-LEARNING COM 5 SEMENTES
 % =============================================================
-\begin{frame}{15. Monte Carlo e Q-learning com 5 Sementes}
+\begin{frame}{16. Monte Carlo e Q-learning com 5 Sementes}
 
   \begin{block}{5 treinos de 30.000 episódios, cada um com sorteios diferentes (sementes 42 a 46)}
     \centering\scriptsize
@@ -734,16 +773,16 @@
       \textbf{Método} & & \textbf{Sharpe} & \textbf{Sharpe} & \textbf{Max Drawdown} & \textbf{Calmar} \\
       \midrule
       MC first-visit & Média         & 1,42   & 0,30   & -39,07\% & 0,44   \\
-                     & Desvio padrão & 0,17   & 0,26   & 19,31\%  & 0,38   \\
-                     & Variância     & 0,0291 & 0,0651 & 0,0373   & 0,1463 \\
+                     & Desvio padrão & 0,17   & 0,26   & 19,31\%  & 0,39   \\
+                     & Variância     & 0,0291 & 0,0680 & 0,0373   & 0,1486 \\
       \midrule
       MC every-visit & Média         & 1,17            & 0,34            & -33,24\%         & 0,47   \\
                      & Desvio padrão & \textbf{0,04}   & \textbf{0,09}   & \textbf{7,94\%}  & 0,17   \\
-                     & Variância     & \textbf{0,0015} & \textbf{0,0078} & \textbf{0,0063}  & 0,0302 \\
+                     & Variância     & \textbf{0,0015} & \textbf{0,0077} & \textbf{0,0063}  & 0,0301 \\
       \midrule
       Q-learning     & Média         & 1,31   & 0,24   & -49,58\% & 0,27            \\
                      & Desvio padrão & 0,10   & 0,12   & 13,24\%  & \textbf{0,12}   \\
-                     & Variância     & 0,0098 & 0,0155 & 0,0175   & \textbf{0,0144} \\
+                     & Variância     & 0,0098 & 0,0155 & 0,0175   & \textbf{0,0143} \\
       \bottomrule
     \end{tabular}
   \end{block}
@@ -758,9 +797,9 @@
 \end{frame}
 
 % =============================================================
-% SLIDE 16 — BENCHMARK: RL VS MODELOS ECONOMÉTRICOS
+% SLIDE 17 — BENCHMARK: RL VS MODELOS ECONOMÉTRICOS
 % =============================================================
-\begin{frame}{16. Benchmark no Teste: RL $\times$ Modelos Econométricos}
+\begin{frame}{17. Benchmark no Teste: RL $\times$ Modelos Econométricos}
 
   \begin{block}{Ranking por Sharpe \quad (Calmar = retorno anual / $|$max drawdown$|$)}
     \centering\footnotesize
@@ -772,15 +811,15 @@
       \midrule
       \textbf{MDP (Value Iteration)}   & \textbf{+126,86\%} & \textbf{0,46} & \textbf{-29,35\%} & \textbf{0,62} & \textbf{113} \\
       \textbf{Monte Carlo}             & \textbf{+119,46\%} & \textbf{0,44} & \textbf{-26,95\%} & \textbf{0,65} & \textbf{108} \\
-      \textbf{Q-learning}              & \textbf{+86,08\%}  & \textbf{0,26} & \textbf{-51,28\%} & \textbf{0,27} & \textbf{190} \\
+      \textbf{Q-learning}              & \textbf{+86,08\%}  & \textbf{0,26} & \textbf{-51,28\%} & \textbf{0,26} & \textbf{190} \\
       \midrule
-      AR(1)                            & +118,97\% & 0,24  & -73,07\% & 0,24  & 49  \\
-      ARMA(1,1)                        & +107,92\% & 0,22  & -72,85\% & 0,22  & 43  \\
-      Probit                           & +60,49\%  & 0,12  & -72,95\% & 0,14  & 113 \\
-      Logit                            & +56,35\%  & 0,11  & -72,95\% & 0,13  & 115 \\
-      Buy \& Hold (passeio aleatório)  & +37,05\%  & 0,05  & -66,93\% & 0,10  & 1   \\
-      Markov-switching (Hamilton)      & +37,05\%  & 0,05  & -66,93\% & 0,10  & 1   \\
-      Regressão preditiva (OLS)        & -50,08\%  & -0,36 & -77,59\% & -0,17 & 224 \\
+      AR(1)                            & +110,82\% & 0,23  & -73,07\% & 0,23  & 49  \\
+      ARMA(1,1)                        & +100,18\% & 0,21  & -72,85\% & 0,21  & 43  \\
+      Probit                           & +54,51\%  & 0,10  & -72,95\% & 0,13  & 113 \\
+      Logit                            & +50,53\%  & 0,09  & -72,95\% & 0,12  & 115 \\
+      Buy \& Hold (passeio aleatório)  & +31,95\%  & 0,04  & -66,93\% & 0,09  & 1   \\
+      Markov-switching (Hamilton)      & +31,95\%  & 0,04  & -66,93\% & 0,09  & 1   \\
+      Regressão preditiva (OLS)        & -48,48\%  & -0,35 & -77,59\% & -0,16 & 225 \\
       \bottomrule
     \end{tabular}
   \end{block}
@@ -794,9 +833,9 @@
 \end{frame}
 
 % =============================================================
-% SLIDE 17 — WALK-FORWARD: A IDEIA
+% SLIDE 18 — WALK-FORWARD: A IDEIA
 % =============================================================
-\begin{frame}{17. Walk-forward: Retreinar ao Longo do Tempo}
+\begin{frame}{18. Walk-forward: Retreinar ao Longo do Tempo}
 
   \centering
   \begin{tikzpicture}[x=1cm, y=1cm, font=\footnotesize]
@@ -854,9 +893,9 @@
 \end{frame}
 
 % =============================================================
-% SLIDE 18 — WALK-FORWARD: RESULTADO
+% SLIDE 19 — WALK-FORWARD: RESULTADO
 % =============================================================
-\begin{frame}{18. Walk-forward: Resultado no Teste}
+\begin{frame}{19. Walk-forward: Resultado no Teste}
 
   \begin{block}{Sharpe no teste (2022 a 2026), retreinando com todo o histórico}
     \centering\small
@@ -870,9 +909,9 @@
       \midrule
       MDP (VI)          & 0,46          & 0,28    & 0,35    & 0,07    & nunca \\
       Monte Carlo       & 0,44          & 0,14    & 0,18    & 0,26    & 3 meses \\
-      Q-learning        & 0,26          & $-$0,03 & 0,25    & $-$0,15 & 3 meses \\
-      AR(1)             & 0,24          & 0,19    & 0,07    & 0,08    & 12 meses \\
-      Buy \& Hold       & 0,05          & 0,05    & 0,05    & 0,05    & -- \\
+      Q-learning        & 0,26          & $-$0,03 & 0,25    & $-$0,17 & 3 meses \\
+      AR(1)             & 0,23          & 0,18    & 0,06    & 0,06    & 12 meses \\
+      Buy \& Hold       & 0,04          & 0,04    & 0,04    & 0,04    & -- \\
       \bottomrule
     \end{tabular}
   \end{block}

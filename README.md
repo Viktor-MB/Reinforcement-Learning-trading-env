@@ -104,28 +104,43 @@ $$Q(s,a) \leftarrow Q(s,a) + \frac{1}{N(s,a)}\Big[R_{t+1} + \gamma \max_{a'} Q(s
 
 ## Resultados
 
-Treino: 2014-11 a 2021-12. Teste: 2022-01 a 2026-11. $\kappa = 0{,}1\%$, $\gamma = 0{,}8$.
+Treino: 06/11/2014 a 31/12/2021. Teste: 01/01/2022 a 18/11/2026. $\kappa = 0{,}1\%$, $\gamma = 0{,}8$.
 
 ### Execução no `gym-trading-env` (teste)
 
 | Estratégia | Retorno total | Retorno anual | Sharpe | Max drawdown | Calmar | Trocas |
 |---|---|---|---|---|---|---|
-| **MDP (Value Iteration)** | **127,80%** | **18,41%** | **0,46** | **−29,35%** | 0,63 | 113 |
-| Monte Carlo (every-visit) | 119,47% | 17,51% | 0,44 | −26,95% | 0,65 | 108 |
-| Q-learning | 86,39% | 13,64% | 0,26 | −51,25% | 0,27 | 190 |
-| Buy & Hold | 37,05% | 6,68% | 0,05 | −66,93% | 0,10 | 1 |
+| **MDP (Value Iteration)** | **127,80%** | **18,37%** | **0,46** | **−29,35%** | 0,63 | 113 |
+| Monte Carlo (every-visit) | 119,47% | 17,47% | 0,44 | −26,95% | 0,65 | 108 |
+| Q-learning | 86,39% | 13,60% | 0,26 | −51,25% | 0,27 | 190 |
+| Buy & Hold | 31,95% | 5,84% | 0,04 | −66,93% | 0,09 | 1 |
 | Fora do mercado | 0,00% | 0,00% | 0,00 | 0,00% | – | 0 |
-| Aleatória | −93,83% | −43,56% | −1,45 | −94,54% | −0,46 | 1.162 |
+| Aleatória | −93,85% | −43,52% | −1,45 | −94,58% | −0,46 | 1.163 |
 
 O teste começa perto de um topo (BTC a ~US$ 47 mil em jan/2022, ~US$ 16 mil no fim de 2022). Por isso o Buy & Hold rende pouco, e o foco está no retorno ajustado ao risco.
+
+### Com e sem corretagem (teste)
+
+As mesmas políticas rodam de novo com corretagem zero. As ações são idênticas, então a diferença é só o custo das trocas.
+
+| Estratégia | Trocas | Retorno anual com corretagem | Retorno anual sem corretagem | Custo (p.p. ao ano) | Sharpe com / sem |
+|---|---|---|---|---|---|
+| MDP (Value Iteration) | 113 | 18,37% | 21,46% | 3,09 | 0,46 / 0,55 |
+| Monte Carlo (every-visit) | 108 | 17,47% | 20,09% | 2,62 | 0,44 / 0,51 |
+| Q-learning | 190 | 13,60% | 18,12% | 4,51 | 0,26 / 0,37 |
+| Buy & Hold | 1 | 5,84% | 5,87% | 0,02 | 0,04 / 0,04 |
+| Aleatória | 1.163 | −43,52% | −21,98% | 21,54 | −1,45 / −0,68 |
+
+- Quem troca mais paga mais: o Q-learning perde 4,5 p.p. ao ano.
+- A ordem entre as estratégias não muda sem corretagem.
 
 ### Política gulosa × ε-greedy (ε = 0,1, média de 100 sementes)
 
 | Política | Sharpe | Max drawdown | Trocas | ε vence a gulosa em |
 |---|---|---|---|---|
-| MDP: gulosa / ε-greedy | 0,46 / 0,20 | −29,35% / −49,77% | 113 / 286 | 24% das sementes |
-| Monte Carlo: gulosa / ε-greedy | 0,44 / 0,14 | −26,95% / −50,57% | 108 / 289 | 21% das sementes |
-| Q-learning: gulosa / ε-greedy | 0,26 / 0,04 | −51,25% / −59,21% | 190 / 373 | 23% das sementes |
+| MDP: gulosa / ε-greedy | 0,46 / 0,20 | −29,35% / −49,87% | 113 / 286 | 24% das sementes |
+| Monte Carlo: gulosa / ε-greedy | 0,44 / 0,14 | −26,95% / −50,67% | 108 / 289 | 21% das sementes |
+| Q-learning: gulosa / ε-greedy | 0,26 / 0,04 | −51,25% / −59,22% | 190 / 373 | 23% das sementes |
 
 Explorar serve para aprender, não para operar.
 
@@ -146,14 +161,14 @@ Explorar serve para aprender, não para operar.
 |---|---|---|---|---|---|
 | **MDP (Value Iteration)** | +126,86% | **0,46** | −29,35% | 0,62 | 113 |
 | Monte Carlo | +119,46% | 0,44 | −26,95% | 0,65 | 108 |
-| Q-learning | +86,08% | 0,26 | −51,28% | 0,27 | 190 |
-| AR(1) | +118,97% | 0,24 | −73,07% | 0,24 | 49 |
-| ARMA(1,1) | +107,92% | 0,22 | −72,85% | 0,22 | 43 |
-| Probit | +60,49% | 0,12 | −72,95% | 0,14 | 113 |
-| Logit | +56,35% | 0,11 | −72,95% | 0,13 | 115 |
-| Buy & Hold (passeio aleatório) | +37,05% | 0,05 | −66,93% | 0,10 | 1 |
-| Markov-switching (Hamilton) | +37,05% | 0,05 | −66,93% | 0,10 | 1 |
-| Regressão preditiva (OLS) | −50,08% | −0,36 | −77,59% | −0,17 | 224 |
+| Q-learning | +86,08% | 0,26 | −51,28% | 0,26 | 190 |
+| AR(1) | +110,82% | 0,23 | −73,07% | 0,23 | 49 |
+| ARMA(1,1) | +100,18% | 0,21 | −72,85% | 0,21 | 43 |
+| Probit | +54,51% | 0,10 | −72,95% | 0,13 | 113 |
+| Logit | +50,53% | 0,09 | −72,95% | 0,12 | 115 |
+| Buy & Hold (passeio aleatório) | +31,95% | 0,04 | −66,93% | 0,09 | 1 |
+| Markov-switching (Hamilton) | +31,95% | 0,04 | −66,93% | 0,09 | 1 |
+| Regressão preditiva (OLS) | −48,48% | −0,35 | −77,59% | −0,16 | 225 |
 
 O *benchmark* usa um simulador próprio, com as mesmas fórmulas. Por isso há diferenças pequenas em relação à tabela do `gym-trading-env`.
 
@@ -167,8 +182,8 @@ O *benchmark* usa um simulador próprio, com as mesmas fórmulas. Por isso há d
 |---|---|---|---|---|---|
 | **MDP (VI)** | **0,46** | 0,28 | 0,35 | 0,07 | nunca |
 | Monte Carlo | 0,44 | 0,14 | 0,18 | 0,26 | 3 meses |
-| Q-learning | 0,26 | −0,03 | 0,25 | −0,15 | 3 meses |
-| AR(1) | 0,24 | 0,19 | 0,07 | 0,08 | 12 meses |
+| Q-learning | 0,26 | −0,03 | 0,25 | −0,17 | 3 meses |
+| AR(1) | 0,23 | 0,18 | 0,06 | 0,06 | 12 meses |
 
 *Sharpe no teste, janela expansiva.* Retreinar não melhorou nenhum modelo. Cada retreino recalcula os tercis e as probabilidades, e a política troca de ação.
 
@@ -180,7 +195,7 @@ O *benchmark* usa um simulador próprio, com as mesmas fórmulas. Por isso há d
 - Os três métodos de RL lideram em Sharpe e Calmar.
 - A política inteira cabe em uma tabela de 27 estados.
 
-> Os números podem variar levemente entre execuções, porque os dados do `yfinance` são atualizados todo dia (o último candle muda).
+> Os dados vão até 18/11/2026 (parâmetro `FIM`), então os números se repetem a cada execução. Para usar dados mais novos, mude `FIM` e rode tudo de novo.
 
 ---
 
@@ -190,7 +205,7 @@ O *benchmark* usa um simulador próprio, com as mesmas fórmulas. Por isso há d
 - **Parte II. Value Iteration:** 4. Estimando o modelo · 5. Value Iteration · 6. Curva de aprendizado · 7. Testes do modelo
 - **Parte III. Monte Carlo:** 8. Treino · 9. Escolha da versão principal · 10. Curvas de aprendizado
 - **Parte IV. Q-learning:** 11. Treino · 12. Q-learning × Monte Carlo × Value Iteration
-- **Parte V. Avaliação:** 13. Simulador (gulosa × ε-greedy, 5 sementes) · 14. Testes do ambiente · 15. Gráficos do teste · 16. *Benchmark* econométrico · 17. Risco × retorno · 18. Curva de capital · 19. *Walk-forward* · 20. Resumo e conclusão
+- **Parte V. Avaliação:** 13. Simulador (com e sem corretagem, gulosa × ε-greedy, 5 sementes) · 14. Testes do ambiente · 15. Gráficos do teste · 16. *Benchmark* econométrico · 17. Risco × retorno · 18. Curva de capital · 19. *Walk-forward* · 20. Resumo e conclusão
 
 ---
 
@@ -201,8 +216,8 @@ pip install gym-trading-env yfinance matplotlib statsmodels
 jupyter notebook RL_TRADE.ipynb
 ```
 
-- Execute as células **em ordem**. O notebook inteiro leva cerca de 10 minutos.
-- O *walk-forward* é a parte mais lenta (~8 min) e roda em paralelo, com `multiprocessing`.
+- Execute as células **em ordem**. O notebook inteiro leva de 5 a 10 minutos.
+- O *walk-forward* é a parte mais lenta e roda em paralelo, com `multiprocessing` (o tempo depende do número de núcleos).
 
 Se houver incompatibilidade de versões:
 
@@ -218,6 +233,7 @@ pip install "gymnasium==0.29.1" "numpy<2" gym-trading-env yfinance
 TICKER = "BTC-USD"      # ativo (reserva: "GLD")
 INICIO = "2010-01-01"
 CORTE  = "2022-01-01"   # treino antes, teste depois
+FIM    = "2026-11-19"   # último download (exclusivo): fixa os dados
 KAPPA  = 0.001          # corretagem
 GAMMA  = 0.8            # fator de desconto
 SEED   = 42             # sementes 42 a 46 na análise de variância
@@ -245,7 +261,7 @@ SEED   = 42             # sementes 42 a 46 na análise de variância
 
 - **Estado simples:** 3 faixas do sinal preço/MA50 e as duas últimas observações. Não captura volatilidade, volume ou regimes macro.
 - **Um único ativo** e um único corte treino/teste. O *walk-forward* mostrou que retreinar recalculando os tercis deixa a política instável.
-- **Custos simplificados:** só corretagem fixa. Não há *slippage*, impacto de mercado ou custo de aluguel no *short*.
+- **Custos simplificados:** só corretagem fixa (o efeito dela está na tabela com e sem corretagem). Não há *slippage*, impacto de mercado ou custo de aluguel no *short*.
 - **Caixa sem juros** no simulador, o que torna o Sharpe conservador.
 - **Divergência no *short* mantido** entre o MDP e o simulador, descrita acima.
 - **Não é recomendação de investimento.** Resultados passados não garantem desempenho futuro.
