@@ -587,14 +587,53 @@
 
 \end{frame}
 
+% =============================================================
+% SLIDE 11 — MONTE CARLO E Q-LEARNING COM 5 SEMENTES
+% =============================================================
+\begin{frame}{11. Monte Carlo e Q-learning com 5 Sementes}
+
+  \begin{block}{5 treinos de 30.000 episódios, cada um com sorteios diferentes (sementes 42 a 46)}
+    \centering\scriptsize
+    \setlength{\tabcolsep}{7pt}
+    \renewcommand{\arraystretch}{1.05}
+    \begin{tabular}{ll c ccc}
+      \toprule
+      & & \textbf{Treino} & \multicolumn{3}{c}{\textbf{Teste (2022 a 2026)}} \\
+      \cmidrule(lr){3-3} \cmidrule(lr){4-6}
+      \textbf{Método} & & \textbf{Sharpe} & \textbf{Sharpe} & \textbf{Max Drawdown} & \textbf{Calmar} \\
+      \midrule
+      MC first-visit & Média         & 1,42   & 0,30   & -39,07\% & 0,44   \\
+                     & Desvio padrão & 0,17   & 0,26   & 19,31\%  & 0,39   \\
+                     & Variância     & 0,0291 & 0,0680 & 0,0373   & 0,1486 \\
+      \midrule
+      MC every-visit & Média         & 1,17            & 0,34            & -33,24\%         & 0,47   \\
+                     & Desvio padrão & \textbf{0,04}   & \textbf{0,09}   & \textbf{7,94\%}  & 0,17   \\
+                     & Variância     & \textbf{0,0015} & \textbf{0,0077} & \textbf{0,0063}  & 0,0301 \\
+      \midrule
+      Q-learning     & Média         & 1,31   & 0,24   & -49,58\% & 0,27            \\
+                     & Desvio padrão & 0,10   & 0,12   & 13,24\%  & \textbf{0,12}   \\
+                     & Variância     & 0,0098 & 0,0155 & 0,0175   & \textbf{0,0143} \\
+      \bottomrule
+    \end{tabular}
+  \end{block}
+
+  \small
+  \begin{itemize}\setlength{\itemsep}{2pt}
+    \item Every-visit: o mais estável (menor desvio no teste)
+    \item Q-learning: mesma ação em 21/27 estados nas 5 sementes
+    \item Na média, o first-visit vence no treino: com 1 semente, a escolha dependeu da sorte
+  \end{itemize}
+
+\end{frame}
+
 % #############################################################
 % PARTE IV — AVALIAÇÃO NO TESTE
 % #############################################################
 
 % =============================================================
-% SLIDE 11 — MÉTRICAS DE AVALIAÇÃO
+% SLIDE 12 — MÉTRICAS DE AVALIAÇÃO
 % =============================================================
-\begin{frame}{11. Métricas de Avaliação}
+\begin{frame}{12. Métricas de Avaliação}
 
   \begin{block}{Métricas de risco e retorno}
     \centering\small
@@ -624,9 +663,9 @@
 \end{frame}
 
 % =============================================================
-% SLIDE 12 — RESULTADOS NO SIMULADOR
+% SLIDE 13 — RESULTADOS NO SIMULADOR
 % =============================================================
-\begin{frame}{12. Resultados no \texttt{gym-trading-env}}
+\begin{frame}{13. Resultados no \texttt{gym-trading-env}}
 
   \begin{block}{BTC-USD, $\kappa = 0{,}1\%$, $\gamma = 0{,}8$}
     \centering\scriptsize
@@ -658,9 +697,9 @@
 \end{frame}
 
 % =============================================================
-% SLIDE 13 — COM E SEM CORRETAGEM
+% SLIDE 14 — COM E SEM CORRETAGEM
 % =============================================================
-\begin{frame}{13. Com e Sem Corretagem no Teste}
+\begin{frame}{14. Com e Sem Corretagem no Teste}
 
   \begin{block}{Mesmas políticas no teste (2022 a 2026), com e sem corretagem}
     \centering\scriptsize
@@ -697,17 +736,17 @@
 \end{frame}
 
 % =============================================================
-% SLIDE 14 — DESEMPENHO NO TESTE (GRÁFICO)
+% SLIDE 15 — DESEMPENHO NO TESTE (GRÁFICO)
 % =============================================================
-\begin{frame}{14. Desempenho no Período de Teste}
+\begin{frame}{15. Desempenho no Período de Teste}
   \centering
   \includegraphics[height=0.86\textheight]{grafico_teste.png}
 \end{frame}
 
 % =============================================================
-% SLIDE 15 — POLÍTICA GULOSA x EPSILON-GREEDY
+% SLIDE 16 — POLÍTICA GULOSA x EPSILON-GREEDY
 % =============================================================
-\begin{frame}{15. Política Gulosa $\times$ $\varepsilon$-greedy}
+\begin{frame}{16. Política Gulosa $\times$ $\varepsilon$-greedy}
 
   \begin{columns}[T,onlytextwidth]
     \begin{column}{0.48\textwidth}
@@ -753,45 +792,6 @@
   \begin{itemize}\setlength{\itemsep}{2pt}
     \item A gulosa vence nos três métodos
     \item Explorar serve para aprender, não para operar
-  \end{itemize}
-
-\end{frame}
-
-% =============================================================
-% SLIDE 16 — MONTE CARLO E Q-LEARNING COM 5 SEMENTES
-% =============================================================
-\begin{frame}{16. Monte Carlo e Q-learning com 5 Sementes}
-
-  \begin{block}{5 treinos de 30.000 episódios, cada um com sorteios diferentes (sementes 42 a 46)}
-    \centering\scriptsize
-    \setlength{\tabcolsep}{7pt}
-    \renewcommand{\arraystretch}{1.05}
-    \begin{tabular}{ll c ccc}
-      \toprule
-      & & \textbf{Treino} & \multicolumn{3}{c}{\textbf{Teste (2022 a 2026)}} \\
-      \cmidrule(lr){3-3} \cmidrule(lr){4-6}
-      \textbf{Método} & & \textbf{Sharpe} & \textbf{Sharpe} & \textbf{Max Drawdown} & \textbf{Calmar} \\
-      \midrule
-      MC first-visit & Média         & 1,42   & 0,30   & -39,07\% & 0,44   \\
-                     & Desvio padrão & 0,17   & 0,26   & 19,31\%  & 0,39   \\
-                     & Variância     & 0,0291 & 0,0680 & 0,0373   & 0,1486 \\
-      \midrule
-      MC every-visit & Média         & 1,17            & 0,34            & -33,24\%         & 0,47   \\
-                     & Desvio padrão & \textbf{0,04}   & \textbf{0,09}   & \textbf{7,94\%}  & 0,17   \\
-                     & Variância     & \textbf{0,0015} & \textbf{0,0077} & \textbf{0,0063}  & 0,0301 \\
-      \midrule
-      Q-learning     & Média         & 1,31   & 0,24   & -49,58\% & 0,27            \\
-                     & Desvio padrão & 0,10   & 0,12   & 13,24\%  & \textbf{0,12}   \\
-                     & Variância     & 0,0098 & 0,0155 & 0,0175   & \textbf{0,0143} \\
-      \bottomrule
-    \end{tabular}
-  \end{block}
-
-  \small
-  \begin{itemize}\setlength{\itemsep}{2pt}
-    \item Every-visit: o mais estável (menor desvio no teste)
-    \item Q-learning: mesma ação em 21/27 estados nas 5 sementes
-    \item Na média, o first-visit vence no treino: com 1 semente, a escolha dependeu da sorte
   \end{itemize}
 
 \end{frame}
