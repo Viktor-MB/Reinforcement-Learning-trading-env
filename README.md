@@ -58,10 +58,11 @@ $$V_{k+1}(s) = \max_{a} \sum_{s'} \widehat{P}(s' \mid s,a)\left[\widehat{R}(s,a,
 
 Com $\gamma = 0{,}8$, converge em **98 iterações** (tolerância $< 10^{-12}$). Leitura da política ótima:
 
-- **Baixa estável:** não abre posição.
+- **Baixa estável:** não abre posição (só segue no *long* já aberto).
 - **Entrando na baixa:** vende.
-- **Neutro:** só mantém o *long* já aberto.
-- **Alta:** compra.
+- **Neutro estável:** só mantém o *long* já aberto.
+- **Alta e alta → neutro:** compra.
+- **Baixa → alta:** vende, mas esse estado é raro no treino.
 
 ### 5. Monte Carlo (*model-free*)
 
@@ -185,7 +186,23 @@ O *benchmark* usa um simulador próprio, com as mesmas fórmulas. Por isso há d
 | Q-learning | 0,26 | −0,03 | 0,25 | −0,17 | 3 meses |
 | AR(1) | 0,23 | 0,18 | 0,06 | 0,06 | 12 meses |
 
-*Sharpe no teste, janela expansiva.* Retreinar não melhorou nenhum modelo. Cada retreino recalcula os tercis e as probabilidades, e a política troca de ação.
+*Sharpe no teste, janela expansiva.* Com todo o histórico, retreinar não melhorou nenhum modelo. Cada retreino recalcula os tercis e as probabilidades, e a política troca de ação. A exceção é o Q-learning só com os últimos 4 anos, retreinando a cada 12 meses (Sharpe 0,33, com uma semente).
+
+### Escolha de γ: bateria na validação
+
+- **Por que γ alto:** a recompensa é o log-retorno, então a soma das recompensas é o log do patrimônio final. Para maximizar a carteira, o futuro importa.
+- **Regra:** treino até 2018 e validação em 2019–2021, como no *walk-forward*. Entre os γ ≥ 0,8, fica o de maior Sharpe médio na validação. Monte Carlo e Q-learning: média de 5 sementes.
+
+| γ | Peso em 5 dias (γ⁵) | Episódio (dias) | MDP (VI) | Monte Carlo | Q-learning | Média |
+|---|---|---|---|---|---|---|
+| 0,3 | 0,2% | 16 | 1,70 | 1,67 | 1,69 | 1,69 |
+| 0,5 | 3,1% | 28 | 1,70 | 1,67 | 1,57 | 1,65 |
+| 0,7 | 16,8% | 52 | 1,59 | 1,54 | 1,40 | 1,51 |
+| **0,8** | **32,8%** | **84** | **1,59** | **1,42** | **1,20** | **1,40** |
+| 0,9 | 59,0% | 176 | 1,59 | 1,17 | 1,16 | 1,31 |
+| 0,95 | 77,4% | 360 | 1,59 | 1,18 | 1,17 | 1,31 |
+
+*Sharpe na validação.* γ menores vão melhor, mas deixam o agente quase míope: com γ = 0,3, a recompensa de daqui a 5 dias pesa 0,2%. Entre os γ ≥ 0,8, o 0,8 é o melhor. No teste, o MDP fica igual (0,46) para todo γ ≤ 0,8, e o Q-learning é o método mais sensível a γ.
 
 ### Principais conclusões
 
@@ -193,6 +210,7 @@ O *benchmark* usa um simulador próprio, com as mesmas fórmulas. Por isso há d
 - O **Monte Carlo** chega perto do MDP sem precisar do modelo.
 - O **Q-learning** chega mais perto de $Q^*$, mas no teste troca mais de posição e cai mais.
 - Os três métodos de RL lideram em Sharpe e Calmar.
+- **γ = 0,8:** o futuro importa para maximizar a carteira, e entre os γ ≥ 0,8 é o melhor na validação.
 - A política inteira cabe em uma tabela de 27 estados.
 
 > Os dados vão até 18/11/2026 (parâmetro `FIM`), então os números se repetem a cada execução. Para usar dados mais novos, mude `FIM` e rode tudo de novo.
@@ -205,7 +223,7 @@ O *benchmark* usa um simulador próprio, com as mesmas fórmulas. Por isso há d
 - **Parte II. Value Iteration:** 4. Estimando o modelo · 5. Value Iteration · 6. Curva de aprendizado · 7. Testes do modelo
 - **Parte III. Monte Carlo:** 8. Treino · 9. Escolha da versão principal · 10. Curvas de aprendizado
 - **Parte IV. Q-learning:** 11. Treino · 12. Q-learning × Monte Carlo × Value Iteration
-- **Parte V. Avaliação:** 13. Simulador (com e sem corretagem, gulosa × ε-greedy, 5 sementes) · 14. Testes do ambiente · 15. Gráficos do teste · 16. *Benchmark* econométrico · 17. Risco × retorno · 18. Curva de capital · 19. *Walk-forward* · 20. Resumo e conclusão
+- **Parte V. Avaliação:** 13. Simulador (com e sem corretagem, gulosa × ε-greedy, 5 sementes) · 14. Testes do ambiente · 15. Gráficos do teste · 16. *Benchmark* econométrico · 17. Risco × retorno · 18. Curva de capital · 19. *Walk-forward* · 20. Escolha de γ · 21. Resumo e conclusão
 
 ---
 
@@ -216,8 +234,8 @@ pip install gym-trading-env yfinance matplotlib statsmodels
 jupyter notebook RL_TRADE.ipynb
 ```
 
-- Execute as células **em ordem**. O notebook inteiro leva de 5 a 10 minutos.
-- O *walk-forward* é a parte mais lenta e roda em paralelo, com `multiprocessing` (o tempo depende do número de núcleos).
+- Execute as células **em ordem**. O notebook inteiro leva cerca de 10 minutos em um computador com 16 núcleos.
+- O *walk-forward* e a bateria de γ são as partes mais lentas e rodam em paralelo, com `multiprocessing` (o tempo depende do número de núcleos).
 
 Se houver incompatibilidade de versões:
 
@@ -235,7 +253,7 @@ INICIO = "2010-01-01"
 CORTE  = "2022-01-01"   # treino antes, teste depois
 FIM    = "2026-11-19"   # último download (exclusivo): fixa os dados
 KAPPA  = 0.001          # corretagem
-GAMMA  = 0.8            # fator de desconto
+GAMMA  = 0.8            # fator de desconto (conferido na validação, seção 20)
 SEED   = 42             # sementes 42 a 46 na análise de variância
 ```
 

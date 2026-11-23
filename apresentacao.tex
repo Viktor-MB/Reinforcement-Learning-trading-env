@@ -170,6 +170,7 @@
     \[
       V^\pi(s) = \sum_{a} \pi(a \mid s)\, Q^\pi(s,a)
     \]
+    {\centering\footnotesize $\gamma \in [0, 1)$: fator de desconto, o peso do futuro (escolha no slide 10)\par}
   \end{block}
 
   \vskip -0.2cm
@@ -394,10 +395,11 @@
         \begin{altura}{3.7cm}
         \footnotesize
         \begin{itemize}\setlength{\itemsep}{3pt}
-          \item \textbf{Baixa estável:} fica fora
+          \item \textbf{Baixa estável:} fica fora ou segue no \textit{long}
           \item \textbf{Entrando na baixa:} vende
-          \item \textbf{Neutro:} só mantém o \textit{long}
-          \item \textbf{Alta:} compra
+          \item \textbf{Neutro estável:} só mantém o \textit{long}
+          \item \textbf{Alta e alta $\to$ neutro:} compra
+          \item \textbf{Baixa $\to$ alta:} vende (raro no treino)
         \end{itemize}
         \end{altura}
       \end{block}
@@ -406,14 +408,46 @@
 
 \end{frame}
 
+% =============================================================
+% SLIDE 7 — MÉTRICAS DE AVALIAÇÃO
+% =============================================================
+\begin{frame}{7. Métricas de Avaliação}
+
+  \begin{block}{Métricas de risco e retorno}
+    \centering\small
+    \setlength{\tabcolsep}{10pt}
+    \begin{tabular}{l c l}
+      \toprule
+      \textbf{Métrica} & \textbf{Fórmula} & \textbf{O que mede} \\
+      \midrule
+      \addlinespace[5pt]
+      Índice de Sharpe   & $\displaystyle \sqrt{365}\;\frac{\bar e}{\sigma_e}$    & retorno extra por unidade de volatilidade \\
+      \addlinespace[9pt]
+      Maximum Drawdown   & $\displaystyle \min_t \Big(\frac{W_t}{P_t} - 1\Big)$ & maior queda percentual do patrimônio \\
+      \addlinespace[9pt]
+      Índice de Calmar   & $\displaystyle \frac{R_{\text{anual}}}{|\text{MDD}|}$ & retorno anual por unidade de queda máxima \\
+      \addlinespace[5pt]
+      \bottomrule
+    \end{tabular}
+  \end{block}
+
+  \footnotesize
+  \begin{itemize}\setlength{\itemsep}{2pt}
+    \item $W_t$: patrimônio no dia $t$ \qquad $P_t$: maior patrimônio até $t$
+    \item $e_t$: retorno diário acima da taxa livre de risco (T-bill de 3 meses)
+    \item 1 ano $=$ 365 dias
+  \end{itemize}
+
+\end{frame}
+
 % #############################################################
 % PARTE III — SOLUÇÕES MODEL-FREE: MONTE CARLO E Q-LEARNING
 % #############################################################
 
 % =============================================================
-% SLIDE 7 — MONTE CARLO: ALGORITMO E FIRST x EVERY-VISIT
+% SLIDE 8 — MONTE CARLO: ALGORITMO E FIRST x EVERY-VISIT
 % =============================================================
-\begin{frame}{7. Monte Carlo (\textit{Model-Free})}
+\begin{frame}{8. Monte Carlo (\textit{Model-Free})}
 
   \begin{columns}[T,onlytextwidth]
     \begin{column}{0.58\textwidth}
@@ -482,9 +516,9 @@
 \end{frame}
 
 % =============================================================
-% SLIDE 8 — Q-LEARNING E COMPARAÇÃO DOS MÉTODOS
+% SLIDE 9 — Q-LEARNING E COMPARAÇÃO DOS MÉTODOS
 % =============================================================
-\begin{frame}{8. Q-learning e Comparação dos Métodos}
+\begin{frame}{9. Q-learning e Comparação dos Métodos}
 
   \begin{block}{Q-learning: atualiza a cada passo (\textit{bootstrap}), mesmos episódios do MC}
     \[
@@ -517,9 +551,64 @@
 \end{frame}
 
 % =============================================================
-% SLIDE 9 — POLÍTICA APRENDIDA PELOS TRÊS MÉTODOS
+% SLIDE 10 — ESCOLHA DE GAMMA
 % =============================================================
-\begin{frame}{9. Política Aprendida pelos Três Métodos}
+\begin{frame}{10. Escolha de $\gamma$: o Futuro Importa}
+
+  \begin{columns}[T,onlytextwidth]
+    \begin{column}{0.60\textwidth}
+      \begin{block}{Validação: treino até 2018, Sharpe em 2019--2021 (sem usar o teste)}
+        \begin{altura}{4.2cm}
+        \centering\scriptsize
+        \setlength{\tabcolsep}{5pt}
+        \renewcommand{\arraystretch}{1.15}
+        \begin{tabular}{c c ccc c}
+          \toprule
+          & \textbf{Peso em 5 dias} & & \multicolumn{2}{c}{\textbf{5 sementes}} & \\
+          \cmidrule(lr){4-5}
+          $\boldsymbol{\gamma}$ & ($\gamma^5$) & \textbf{VI} & \textbf{MC} & \textbf{QL} & \textbf{Média} \\
+          \midrule
+          0,3  & 0,2\%  & 1,70 & 1,67 & 1,69 & 1,69 \\
+          0,5  & 3,1\%  & 1,70 & 1,67 & 1,57 & 1,65 \\
+          0,7  & 16,8\% & 1,59 & 1,54 & 1,40 & 1,51 \\
+          \midrule
+          \textbf{0,8} & \textbf{32,8\%} & \textbf{1,59} & \textbf{1,42} & \textbf{1,20} & \textbf{1,40} \\
+          0,9  & 59,0\% & 1,59 & 1,17 & 1,16 & 1,31 \\
+          0,95 & 77,4\% & 1,59 & 1,18 & 1,17 & 1,31 \\
+          \bottomrule
+        \end{tabular}
+        \end{altura}
+      \end{block}
+    \end{column}
+
+    \begin{column}{0.36\textwidth}
+      \begin{block}{Por que $\gamma$ alto}
+        \begin{altura}{4.2cm}
+        \footnotesize
+        \begin{itemize}\setlength{\itemsep}{4pt}
+          \item Recompensa em log: a soma é o log do patrimônio final
+          \item Objetivo: maximizar a carteira, então o futuro importa
+          \item $\gamma$ baixo: agente quase míope
+          \item Regra: maior Sharpe na validação entre $\gamma \ge 0{,}8$
+        \end{itemize}
+        \end{altura}
+      \end{block}
+    \end{column}
+  \end{columns}
+
+  \small
+  \begin{itemize}\setlength{\itemsep}{2pt}
+    \item $\gamma$ menor vai melhor na validação, mas só olha 1 a 2 dias à frente
+    \item Entre $\gamma \ge 0{,}8$, o \textbf{0,8} é o melhor; o VI quase não muda com $\gamma$
+    \item Validação $\neq$ teste: outro período e treino só até 2018, por isso o Sharpe é outro
+  \end{itemize}
+
+\end{frame}
+
+% =============================================================
+% SLIDE 11 — POLÍTICA APRENDIDA PELOS TRÊS MÉTODOS
+% =============================================================
+\begin{frame}{11. Política Aprendida pelos Três Métodos}
 
   \begin{columns}[T,onlytextwidth]
     \begin{column}{0.66\textwidth}
@@ -570,9 +659,9 @@
 \end{frame}
 
 % =============================================================
-% SLIDE 10 — CURVAS DE APRENDIZADO (5 SEMENTES)
+% SLIDE 12 — CURVAS DE APRENDIZADO (5 SEMENTES)
 % =============================================================
-\begin{frame}{10. Convergência: Monte Carlo $\times$ Q-learning}
+\begin{frame}{12. Convergência: Monte Carlo $\times$ Q-learning}
 
   \centering
   \includegraphics[width=0.94\textwidth]{curva_sementes.png}
@@ -581,16 +670,16 @@
   \raggedright\small
   \begin{itemize}\setlength{\itemsep}{2pt}
     \item Referência teórica: $Q^*$ do VI, mesmo MDP
-    \item Q-learning chega mais perto de $Q^*$: erro 0,005 (MC: 0,007)
+    \item Q-learning chega mais perto de $Q^*$: erro médio 0,005 (MC: 0,007) nas 5 sementes
     \item Mas varia mais entre as 5 sementes
   \end{itemize}
 
 \end{frame}
 
 % =============================================================
-% SLIDE 11 — MONTE CARLO E Q-LEARNING COM 5 SEMENTES
+% SLIDE 13 — MONTE CARLO E Q-LEARNING COM 5 SEMENTES
 % =============================================================
-\begin{frame}{11. Monte Carlo e Q-learning com 5 Sementes}
+\begin{frame}{13. Monte Carlo e Q-learning com 5 Sementes}
 
   \begin{block}{5 treinos de 30.000 episódios, cada um com sorteios diferentes (sementes 42 a 46)}
     \centering\scriptsize
@@ -631,41 +720,9 @@
 % #############################################################
 
 % =============================================================
-% SLIDE 12 — MÉTRICAS DE AVALIAÇÃO
+% SLIDE 14 — RESULTADOS NO SIMULADOR
 % =============================================================
-\begin{frame}{12. Métricas de Avaliação}
-
-  \begin{block}{Métricas de risco e retorno}
-    \centering\small
-    \setlength{\tabcolsep}{10pt}
-    \begin{tabular}{l c l}
-      \toprule
-      \textbf{Métrica} & \textbf{Fórmula} & \textbf{O que mede} \\
-      \midrule
-      \addlinespace[5pt]
-      Índice de Sharpe   & $\displaystyle \sqrt{365}\;\frac{\bar e}{\sigma_e}$    & retorno extra por unidade de volatilidade \\
-      \addlinespace[9pt]
-      Maximum Drawdown   & $\displaystyle \min_t \Big(\frac{W_t}{P_t} - 1\Big)$ & maior queda percentual do patrimônio \\
-      \addlinespace[9pt]
-      Índice de Calmar   & $\displaystyle \frac{R_{\text{anual}}}{|\text{MDD}|}$ & retorno anual por unidade de queda máxima \\
-      \addlinespace[5pt]
-      \bottomrule
-    \end{tabular}
-  \end{block}
-
-  \footnotesize
-  \begin{itemize}\setlength{\itemsep}{2pt}
-    \item $W_t$: patrimônio no dia $t$ \qquad $P_t$: maior patrimônio até $t$
-    \item $e_t$: retorno diário acima da taxa livre de risco (T-bill de 3 meses)
-    \item 1 ano $=$ 365 dias
-  \end{itemize}
-
-\end{frame}
-
-% =============================================================
-% SLIDE 13 — RESULTADOS NO SIMULADOR
-% =============================================================
-\begin{frame}{13. Resultados no \texttt{gym-trading-env}}
+\begin{frame}{14. Resultados no \texttt{gym-trading-env}}
 
   \begin{block}{BTC-USD, $\kappa = 0{,}1\%$, $\gamma = 0{,}8$}
     \centering\scriptsize
@@ -697,9 +754,9 @@
 \end{frame}
 
 % =============================================================
-% SLIDE 14 — COM E SEM CORRETAGEM
+% SLIDE 15 — COM E SEM CORRETAGEM
 % =============================================================
-\begin{frame}{14. Com e Sem Corretagem no Teste}
+\begin{frame}{15. Com e Sem Corretagem no Teste}
 
   \begin{block}{Mesmas políticas no teste (2022 a 2026), com e sem corretagem}
     \centering\scriptsize
@@ -736,17 +793,17 @@
 \end{frame}
 
 % =============================================================
-% SLIDE 15 — DESEMPENHO NO TESTE (GRÁFICO)
+% SLIDE 16 — DESEMPENHO NO TESTE (GRÁFICO)
 % =============================================================
-\begin{frame}{15. Desempenho no Período de Teste}
+\begin{frame}{16. Desempenho no Período de Teste}
   \centering
   \includegraphics[height=0.86\textheight]{grafico_teste.png}
 \end{frame}
 
 % =============================================================
-% SLIDE 16 — POLÍTICA GULOSA x EPSILON-GREEDY
+% SLIDE 17 — POLÍTICA GULOSA x EPSILON-GREEDY
 % =============================================================
-\begin{frame}{16. Política Gulosa $\times$ $\varepsilon$-greedy}
+\begin{frame}{17. Política Gulosa $\times$ $\varepsilon$-greedy}
 
   \begin{columns}[T,onlytextwidth]
     \begin{column}{0.48\textwidth}
@@ -797,9 +854,9 @@
 \end{frame}
 
 % =============================================================
-% SLIDE 17 — BENCHMARK: RL VS MODELOS ECONOMÉTRICOS
+% SLIDE 18 — BENCHMARK: RL VS MODELOS ECONOMÉTRICOS
 % =============================================================
-\begin{frame}{17. Benchmark no Teste: RL $\times$ Modelos Econométricos}
+\begin{frame}{18. Benchmark no Teste: RL $\times$ Modelos Econométricos}
 
   \begin{block}{Ranking por Sharpe \quad (Calmar = retorno anual / $|$max drawdown$|$)}
     \centering\footnotesize
@@ -830,12 +887,15 @@
     \item MDP e MC: menos da metade da queda máxima dos econométricos
   \end{itemize}
 
+  \vfill
+  {\scriptsize\color{SlateGray} Simulação própria, igual para todos os modelos: o RL difere pouco do \texttt{gym-trading-env} (slide 14) porque o simulador não rebalanceia o \textit{short} mantido.\par}
+
 \end{frame}
 
 % =============================================================
-% SLIDE 18 — WALK-FORWARD: A IDEIA
+% SLIDE 19 — WALK-FORWARD: A IDEIA
 % =============================================================
-\begin{frame}{18. Walk-forward: Retreinar ao Longo do Tempo}
+\begin{frame}{19. Walk-forward: Retreinar ao Longo do Tempo}
 
   \centering
   \begin{tikzpicture}[x=1cm, y=1cm, font=\footnotesize]
@@ -893,9 +953,9 @@
 \end{frame}
 
 % =============================================================
-% SLIDE 19 — WALK-FORWARD: RESULTADO
+% SLIDE 20 — WALK-FORWARD: RESULTADO
 % =============================================================
-\begin{frame}{19. Walk-forward: Resultado no Teste}
+\begin{frame}{20. Walk-forward: Resultado no Teste}
 
   \begin{block}{Sharpe no teste (2022 a 2026), retreinando com todo o histórico}
     \centering\small
@@ -918,8 +978,8 @@
 
   \small
   \begin{itemize}\setlength{\itemsep}{2pt}
-    \item Retreinar \textbf{não melhorou nenhum modelo}
-    \item MDP treinado uma vez continua o melhor
+    \item Com todo o histórico, retreinar \textbf{não melhorou nenhum modelo}
+    \item Exceção: Q-learning só com os últimos 4 anos, a cada 12 meses (0,33; 1 semente)
     \item Motivo: cada retreino muda tercis e probabilidades, e a política troca de ação
   \end{itemize}
 
