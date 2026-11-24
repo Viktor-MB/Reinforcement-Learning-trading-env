@@ -298,7 +298,7 @@ O Monte Carlo usa o retorno observado no episódio. Ao fim de cada episódio, os
 \begin{equation}
   Q(s,a) \leftarrow Q(s,a) + \frac{1}{N(s,a)} \big[G_t - Q(s,a)\big].
 \end{equation}
-Só os $H$ primeiros passos de cada episódio são atualizados: assim, todo $G_t$ usado contém pelo menos $H$ recompensas futuras, e o truncamento despreza um peso menor que $10^{-4}$. Foram comparadas as versões \textit{first-visit}, que usa só a primeira passagem por $(s,a)$ em cada episódio, e \textit{every-visit}, que usa todas~\cite{sutton2018}. Com a semente 42, a \textit{every-visit} fez 1.260.000 atualizações (contra 388.071) e teve Sharpe no treino de 1,20 (contra 1,12), e foi escolhida como versão principal. Como o alvo é o retorno real do episódio, o Monte Carlo não depende da hipótese de Markov.
+Só os $H$ primeiros passos de cada episódio são atualizados: assim, todo $G_t$ usado contém pelo menos $H$ recompensas futuras, e o truncamento despreza um peso menor que $10^{-4}$. Foram comparadas as versões \textit{first-visit}, que usa só a primeira passagem por $(s,a)$ em cada episódio, e \textit{every-visit}, que usa todas~\cite{sutton2018}. Com a semente 42, a \textit{every-visit} fez 1.260.000 atualizações (contra 388.071) e teve Sharpe no treino de 1,20 (contra 1,12), e foi escolhida como versão principal. Como o alvo é o retorno real do episódio, e não o valor estimado do estado seguinte, o Monte Carlo depende menos da hipótese de Markov~\cite{sutton2018}.
 
 \subsection{Q-learning}
 

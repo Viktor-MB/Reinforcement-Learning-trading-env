@@ -1,0 +1,1236 @@
+\documentclass[11pt,a4paper]{article}
+
+% =============================================================
+% PACOTES
+% =============================================================
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[brazil]{babel}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage[a4paper, margin=2.3cm]{geometry}
+\usepackage{amsmath, amssymb}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{parskip}       % parágrafos sem recuo, separados por um espaço
+\usepackage{needspace}     % evita título sozinho no pé da página
+\usepackage{titlesec}
+\usepackage{tcolorbox}
+\tcbuselibrary{breakable, skins}
+\usepackage[hidelinks]{hyperref}
+
+% seção só começa se couber um pedaço do texto na mesma página
+\newcommand{\sectionbreak}{\needspace{14\baselineskip}}
+\newcommand{\subsectionbreak}{\needspace{8\baselineskip}}
+
+% coluna de tabela com texto alinhado à esquerda
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+
+% =============================================================
+% CORES E CAIXAS: cinza e um único azul-escuro
+% =============================================================
+\definecolor{Destaque}{RGB}{16, 37, 66}
+\definecolor{Fundo}{gray}{0.965}
+
+\tcbset{guia/.style={enhanced, breakable, sharp corners, frame hidden, colback=Fundo,
+                    borderline west={1.2pt}{0pt}{black!35},
+                    left=3mm, right=2mm, top=1.5mm, bottom=1.5mm, before skip=6pt, after skip=8pt}}
+\newtcolorbox{exemplo}[1]{guia, before upper={{\small\bfseries Exemplo: #1}\par}}
+\newtcolorbox{defesa}{guia, no borderline, borderline west={1.6pt}{0pt}{Destaque},
+                      before upper={{\small\bfseries Na defesa}\par}}
+
+% título interno, numa linha própria
+\newcommand{\bloco}[1]{\par\needspace{4\baselineskip}{\bfseries #1}\par\nopagebreak}
+
+% destaque de divergência entre políticas (modo matemático)
+\newcommand{\dif}[1]{\boldsymbol{#1}}
+
+% figura opcional: só entra se o arquivo existir na pasta imagens/
+\newcommand{\figura}[3]{%
+  \IfFileExists{imagens/#1}{%
+    \begin{figure}[htbp]
+      \centering
+      \includegraphics[width=#2]{imagens/#1}
+      \caption{#3}
+    \end{figure}%
+  }{}%
+}
+
+\setlist[itemize]{leftmargin=*, itemsep=2pt}
+\setlist[enumerate]{leftmargin=*, itemsep=2pt}
+
+% =============================================================
+\title{\textbf{Guia de Estudos}\\[4pt]
+\large Aprendizado por Reforço Aplicado ao \textit{Trading} de BTC-USD}
+\author{Tiago Macedo, Viktor Mayer e Enzo Guedes\\
+\small IBMEC --- Professor: Rodrigo Luna}
+\date{Novembro de 2026}
+
+\begin{document}
+
+\maketitle
+
+\textbf{Como usar este guia.} Os assuntos seguem a ordem da apresentação. Cada seção traz a ideia, a fórmula, os números do projeto e, quando ajuda, um exemplo e o que responder se o professor perguntar. Todos os números vêm do notebook \texttt{RL\_TRADE.ipynb}. A última seção reúne as perguntas mais prováveis, com respostas curtas.
+
+\tableofcontents
+
+% =============================================================
+\section*{Números-chave}
+\addcontentsline{toc}{section}{Números-chave}
+
+\begin{center}
+\small
+\begin{tabular}{l L{10.6cm}}
+  \toprule
+  \textbf{Item} & \textbf{Valor} \\
+  \midrule
+  Ativo e frequência        & BTC-USD, diário (Yahoo Finance), fechamento às 21h de Brasília (0h UTC) \\
+  Treino                    & 06/11/2014 a 31/12/2021 \\
+  Teste                     & 01/01/2022 a 18/11/2026 (1.783 dias) \\
+  Corretagem $\kappa$       & 0,1\% por unidade trocada (inverter a posição paga 0,2\%) \\
+  Fator de desconto         & $\gamma = 0{,}8$ (a recompensa do 5º dia pesa 32,8\%) \\
+  Limiares (tercis)         & $\tau_1 = -0{,}0234$ \quad $\tau_2 = 0{,}0953$ \\
+  Espaço discreto           & 27 estados, 3 ações, 81 pares estado-ação \\
+  \textit{Value Iteration}  & 98 iterações (tolerância $< 10^{-12}$) \\
+  Monte Carlo e Q-learning  & 30.000 episódios de 84 dias, $\varepsilon$ de 1 a 0,05, $H = 42$ \\
+  Sementes                  & 42 (principal); 42 a 46 na análise de variabilidade \\
+  Taxa livre de risco       & T-bill de 3 meses: 0,78\% a.a. no treino, 3,94\% a.a. no teste \\
+  Sharpe no teste           & VI 0,46 \quad MC 0,44 \quad QL 0,26 \quad \textit{Buy \& Hold} 0,04 \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+\section*{Símbolos}
+\addcontentsline{toc}{section}{Símbolos}
+
+\begin{center}
+\small
+\begin{tabular}{l L{12.5cm}}
+  \toprule
+  \textbf{Símbolo} & \textbf{Significado} \\
+  \midrule
+  $c_t$                     & preço de fechamento no dia $t$ \\
+  $r_{t+1}$                 & retorno simples do dia seguinte, $c_{t+1}/c_t - 1$ \\
+  $\rho_t$                  & log-retorno do dia, $\ln(c_t/c_{t-1})$ (usado pelos modelos econométricos) \\
+  $x_t$                     & sinal do estado: $\ln(c_t/\mathrm{MA}_{50})$, distância do preço à média móvel de 50 dias \\
+  $\phi(x)$                 & faixa de $x$: 0 (baixa), 1 (neutro) ou 2 (alta) \\
+  $\tau_1, \tau_2$          & limiares que separam as faixas (tercis do treino) \\
+  $a_t$                     & ação: posição escolhida no dia $t$ para o dia seguinte, $-1$, $0$ ou $+1$ \\
+  $h_{t-1}$                 & posição anterior (a ação do dia $t-1$) \\
+  $s_t$                     & estado: $(\phi(x_t), \phi(x_{t-1}), h_{t-1})$ \\
+  $\kappa$                  & corretagem por unidade de posição trocada \\
+  $R_{t+1}$                 & recompensa: log-retorno da carteira, líquido da corretagem \\
+  $W_t$                     & patrimônio no dia $t$ \\
+  $\gamma$                  & fator de desconto \\
+  $G_t$                     & retorno descontado a partir de $t$ \\
+  $V(s)$, $Q(s,a)$          & valor do estado; valor de tomar a ação $a$ no estado $s$ \\
+  $V^*$, $Q^*$, $\pi^*$     & valores ótimos e política ótima \\
+  $\widehat{P}$, $\widehat{R}$ & probabilidades de transição e recompensas estimadas no treino \\
+  $N(s,a)$                  & número de visitas ao par $(s,a)$ \\
+  $\varepsilon$             & probabilidade de explorar (ação sorteada) \\
+  $H$                       & número de dias atualizados em cada episódio \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+\newpage
+
+% =============================================================
+\section{O problema}
+
+Todo dia, no fechamento (21h de Brasília, 0h UTC), o robô escolhe a posição em BTC-USD para o dia seguinte: comprado ($+1$), fora do mercado ($0$) ou vendido ($-1$). O Bitcoin negocia 24 horas por dia, 7 dias por semana; por isso, nas métricas, 1 ano $=$ 365 dias.
+
+\textit{Trading} não é só prever se o preço sobe ou cai. Toda troca de posição paga uma corretagem de $\kappa = 0{,}1\%$ \textbf{por unidade de posição trocada}:
+
+\begin{center}
+\begin{tabular}{l c c}
+  \toprule
+  \textbf{Movimento} & $|a_t - h_{t-1}|$ & \textbf{Custo} \\
+  \midrule
+  Mantém a posição                         & 0 & 0\% \\
+  Entra ou sai ($0 \leftrightarrow \pm 1$)  & 1 & 0,1\% \\
+  Inverte ($+1 \leftrightarrow -1$)         & 2 & 0,2\% \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+Por isso a melhor ação depende da posição anterior, $h_{t-1}$, que entra no estado.
+
+\bloco{Dados}
+\begin{itemize}
+  \item Preços diários do Yahoo Finance (biblioteca \texttt{yfinance}).
+  \item \textbf{Treino:} 06/11/2014 a 31/12/2021. \textbf{Teste:} 01/01/2022 a 18/11/2026 (1.783 dias).
+  \item Tudo é estimado só no treino. O teste é usado uma única vez, no fim.
+  \item A data final é fixa no notebook (\texttt{FIM}): rodar de novo dá os mesmos números.
+\end{itemize}
+
+% =============================================================
+\section{A modelagem: estado, ação e recompensa}
+
+\bloco{Estado}
+O preço do Bitcoin foi de algumas centenas de dólares em 2014 para mais de US\$ 120 mil em 2025; usar o preço bruto impediria o robô de comparar épocas. Por isso o estado usa um sinal relativo:
+\[
+  x_t = \ln\frac{c_t}{\mathrm{MA}_{50}(c_t)}, \qquad s_t = (x_t,\, x_{t-1},\, h_{t-1}).
+\]
+\begin{itemize}
+  \item $x_t$ mede quanto o preço está acima ou abaixo da média móvel de 50 dias. É comparável em qualquer época.
+  \item $x_{t-1}$, o valor de ontem, mostra a direção do movimento (por exemplo, cruzando a média para cima).
+  \item $h_{t-1}$, a posição anterior, é necessária para calcular a corretagem.
+\end{itemize}
+Como $x_t$ é contínuo, o estado ainda precisa ser discretizado (Seção~\ref{sec:disc}).
+
+\bloco{Ação}
+$a_t \in \mathcal{A} = \{-1, 0, +1\}$: a posição para o dia seguinte.
+
+\bloco{Recompensa}
+\[
+  R_{t+1} = \ln\!\big(1 + a_t\, r_{t+1} - \kappa\, |a_t - h_{t-1}|\big), \qquad r_{t+1} = \frac{c_{t+1}}{c_t} - 1.
+\]
+Duas escolhas importantes:
+\begin{itemize}
+  \item \textbf{Log.} O patrimônio evolui como $W_{t+1} = W_t\,(1 + a_t r_{t+1} - \kappa|a_t - h_{t-1}|)$, então $R_{t+1} = \ln(W_{t+1}/W_t)$, e a soma das recompensas é telescópica:
+  \[
+    \sum_{t=0}^{T-1} R_{t+1} = \ln\frac{W_1}{W_0} + \ln\frac{W_2}{W_1} + \dots + \ln\frac{W_T}{W_{T-1}} = \ln\frac{W_T}{W_0}.
+  \]
+  Os retornos \textbf{multiplicam} o patrimônio, e o aprendizado por reforço \textbf{soma} recompensas; o log transforma um no outro de forma exata. Maximizar $\mathbb{E}[\ln W_T]$ é o critério de Kelly (crescimento composto do capital).
+  \item \textbf{Retorno simples dentro do log.} Para o vendido, o ganho é $\ln(1 - r)$, e não $-\ln(1 + r)$. Se o BTC cai 10\%, o vendido ganha $\ln(1{,}10) = 9{,}53\%$ em log; usar $-\ln(0{,}90) = 10{,}54\%$ superestimaria o ganho em 1 ponto.
+\end{itemize}
+
+\begin{exemplo}{aditividade do log em 2 dias (números hipotéticos)}
+Patrimônio inicial de US\$ 1.000,00, $\kappa = 0{,}001$, começando fora do mercado ($h_0 = 0$).
+
+\textbf{Dia 1.} O robô compra ($a_1 = +1$) e paga $\kappa\,|1 - 0| = 0{,}001$. O BTC sobe 4\%:
+\[
+  R_2 = \ln(1 + 0{,}04 - 0{,}001) = \ln(1{,}039) \approx 0{,}038259, \qquad W_2 = \text{US\$ } 1.039{,}00.
+\]
+\textbf{Dia 2.} O robô inverte para vendido ($a_2 = -1$) e paga $\kappa\,|-1 - 1| = 0{,}002$. O BTC cai 5\%:
+\[
+  R_3 = \ln(1 + 0{,}05 - 0{,}002) = \ln(1{,}048) \approx 0{,}046884, \qquad W_3 = 1.039 \times 1{,}048 = \text{US\$ } 1.088{,}87.
+\]
+\textbf{Soma:} $R_2 + R_3 = 0{,}085143 = \ln(1.088{,}87 / 1.000)$. A aditividade é exata.
+\end{exemplo}
+
+\bloco{O MDP do projeto}
+Um processo de decisão de Markov (MDP) é a tupla $(\mathcal{S}, \mathcal{A}, P, R, \gamma)$:
+\begin{itemize}
+  \item $\mathcal{S}$: os 27 estados discretos; $\mathcal{A} = \{-1, 0, +1\}$.
+  \item $P(s' \mid s,a)$: probabilidades de transição, estimadas nos dados (Seção~\ref{sec:vi}).
+  \item $R$: o log-retorno líquido; $\gamma = 0{,}8$.
+  \item O agente é o robô; o ambiente, o mercado. A política é uma tabela com uma ação para cada um dos 27 estados.
+\end{itemize}
+
+\bloco{Limitações da modelagem}
+\begin{itemize}
+  \item O estado não tem volatilidade nem volume.
+  \item O \textit{short} é simétrico ao \textit{long}: não há margem, liquidação, \textit{funding} nem aluguel.
+  \item A execução é no fechamento, sem \textit{slippage}.
+\end{itemize}
+
+% =============================================================
+\section{Fundamentos: Markov, desconto e Bellman}
+
+\subsection{Propriedade de Markov}
+
+O próximo estado depende só do estado atual, e não de como se chegou nele:
+\[
+  P(S_{t+1} = s' \mid S_t, S_{t-1}, \dots, S_0) = P(S_{t+1} = s' \mid S_t).
+\]
+Por isso o estado inclui a faixa de ontem e a posição anterior: o ideal é que ele concentre toda a informação relevante. Com preços reais, isso vale só de forma aproximada; nada garante que 27 estados resumam todo o passado do mercado.
+
+\subsection{Retorno e fator de desconto}
+
+O retorno a partir de $t$ é a soma descontada das recompensas futuras. Pondo $\gamma$ em evidência a partir do segundo termo, ele fica recursivo:
+\[
+  G_t = R_{t+1} + \gamma R_{t+2} + \gamma^2 R_{t+3} + \dots = \sum_{k=0}^{\infty} \gamma^k R_{t+k+1} = R_{t+1} + \gamma\, G_{t+1}.
+\]
+
+\bloco{O que $\gamma = 0{,}8$ significa}
+\begin{itemize}
+  \item A recompensa de daqui a 5 dias pesa $0{,}8^5 = 32{,}8\%$. Com $\gamma = 0{,}3$, pesaria só 0,2\%.
+  \item A soma dos pesos é a série geométrica: com $S = \sum_{k \ge 0} \gamma^k$, vale $S - \gamma S = 1$, logo $S = 1/(1 - \gamma) = 5$. É o ``horizonte efetivo'' de 5 dias; com $\gamma = 0{,}3$, seria 1,4 dia.
+  \item Se $|R| \le R_{\max}$, então $|G_t| \le R_{\max}/(1 - \gamma)$: com $\gamma < 1$, o retorno é sempre finito.
+\end{itemize}
+
+\bloco{Por que descontar}
+Conveniência matemática (o retorno fica finito e o \textit{Value Iteration} converge), incerteza sobre o futuro e, com recompensa financeira, o fato de que a recompensa imediata pode valer mais. Com $\gamma = 1$, todas as recompensas pesam igual; com $\gamma$ perto de 0, só a imediata importa.
+
+\bloco{De onde vêm $H = 42$ e o episódio de 84 dias}
+O peso de tudo o que vem depois de $H$ passos é $\sum_{k \ge H} \gamma^k = \gamma^H/(1 - \gamma)$, uma fração $\gamma^H$ do total. O notebook escolhe o menor $H$ com $\gamma^H < 10^{-4}$:
+\[
+  H = \left\lceil \frac{\ln 10^{-4}}{\ln \gamma} \right\rceil = \left\lceil \frac{-9{,}210}{-0{,}223} \right\rceil = \lceil 41{,}3 \rceil = 42,
+  \qquad 0{,}8^{42} \approx 8{,}5 \times 10^{-5}.
+\]
+O episódio tem $2H = 84$ dias: os $H$ primeiros são atualizados, e os outros $H$ só completam os retornos. A mesma regra dá os episódios de 16, 28, 52, 84, 176 e 360 dias da bateria de $\gamma$ (Seção~\ref{sec:gamma}).
+
+\subsection{Funções de valor e a equação de Bellman}
+
+As funções de valor são esperanças do retorno:
+\[
+  V^\pi(s) = \mathbb{E}_\pi[G_t \mid S_t = s], \qquad Q^\pi(s,a) = \mathbb{E}_\pi[G_t \mid S_t = s, A_t = a].
+\]
+
+\bloco{Dedução da equação de Bellman}
+Usando $G_t = R_{t+1} + \gamma G_{t+1}$ e condicionando na ação $a$ e no próximo estado $s'$:
+\[
+  \begin{aligned}
+    V^\pi(s) &= \mathbb{E}_\pi[R_{t+1} + \gamma\, G_{t+1} \mid S_t = s] \\
+             &= \sum_a \pi(a \mid s) \sum_{s'} P(s' \mid s,a)\,\Big[R(s,a,s') + \gamma\, \mathbb{E}_\pi[G_{t+1} \mid s, a, s']\Big] \\
+             &= \sum_a \pi(a \mid s) \sum_{s'} P(s' \mid s,a)\,\big[R(s,a,s') + \gamma\, V^\pi(s')\big].
+  \end{aligned}
+\]
+Na última linha, $\mathbb{E}_\pi[G_{t+1} \mid S_t = s, A_t = a, S_{t+1} = s']$ virou $V^\pi(s')$, que só depende de $s'$. Isso vale se o futuro depende do passado só pelo estado atual: \textbf{é aqui que entra a propriedade de Markov}.
+
+Em termos de $Q$:
+\[
+  Q^\pi(s,a) = \sum_{s'} P(s' \mid s,a)\,\big[R(s,a,s') + \gamma\, V^\pi(s')\big], \qquad
+  V^\pi(s) = \sum_a \pi(a \mid s)\, Q^\pi(s,a).
+\]
+Em palavras: o valor de uma ação é a recompensa de hoje mais o valor de onde o robô acorda amanhã, descontado por $\gamma$.
+
+\begin{exemplo}{valor de comprar em alta (números hipotéticos, $\gamma = 0{,}8$)}
+\begin{itemize}
+  \item Com 70\% de chance continua em alta ($V = 0{,}10$), ganho imediato $+0{,}02$: $0{,}02 + 0{,}8 \times 0{,}10 = 0{,}100$.
+  \item Com 30\% de chance vira baixa ($V = 0{,}01$), perda imediata $-0{,}03$: $-0{,}03 + 0{,}8 \times 0{,}01 = -0{,}022$.
+  \item $Q(\text{alta}, +1) = 0{,}70 \times 0{,}100 + 0{,}30 \times (-0{,}022) = 0{,}0634$.
+\end{itemize}
+\end{exemplo}
+
+\bloco{Forma matricial}
+Para uma política fixa, empilhando os 27 estados num vetor, a equação é linear:
+\[
+  V^\pi = R^\pi + \gamma P^\pi V^\pi \;\Longrightarrow\; (I - \gamma P^\pi)\,V^\pi = R^\pi \;\Longrightarrow\; V^\pi = (I - \gamma P^\pi)^{-1} R^\pi.
+\]
+A inversa existe porque $\gamma < 1$: $(I - \gamma P^\pi)^{-1} = \sum_{k \ge 0} \gamma^k (P^\pi)^k$, ou seja,
+\[
+  V^\pi = R^\pi + \gamma\, P^\pi R^\pi + \gamma^2 (P^\pi)^2 R^\pi + \dots,
+\]
+a recompensa esperada de hoje, mais a de amanhã descontada, e assim por diante. O custo de inverter é $O(n^3)$; com 27 estados, é instantâneo.
+
+\bloco{Otimalidade}
+O valor ótimo é o melhor entre todas as políticas, $V^*(s) = \max_\pi V^\pi(s)$, e satisfaz:
+\[
+  V^*(s) = \max_a Q^*(s,a), \qquad
+  Q^*(s,a) = \sum_{s'} P(s' \mid s,a)\,\Big[R(s,a,s') + \gamma \max_{a'} Q^*(s',a')\Big].
+\]
+Existe sempre uma política ótima determinística, $\pi^*(s) = \arg\max_a Q^*(s,a)$: basta uma tabela com uma ação por estado. Por causa do $\max$, essa equação não é linear e não dá para resolvê-la invertendo uma matriz. Daí o \textit{Value Iteration}.
+
+\begin{defesa}
+A dedução mostra onde está a hipótese de Markov. O \textit{Value Iteration} e o Q-learning usam a equação de Bellman, então dependem dela. O Monte Carlo estima $\mathbb{E}[G_t \mid S_t = s, A_t = a]$ direto, pela média dos retornos observados, sem esse passo. Por isso o MC \textbf{depende menos} de Markov; mas a política dele também só enxerga os 27 estados.
+\end{defesa}
+
+% =============================================================
+\section{Discretização: tercis e 27 estados}
+\label{sec:disc}
+
+Como $x_t$ é contínuo, há infinitos estados, e $V(s)$ e $Q(s,a)$ não cabem numa tabela. A solução: os 2.614 valores de $x_t$ do treino são ordenados e cortados em 3 faixas com 1/3 dos dias cada. Os cortes ficam congelados e são aplicados ao teste sem recalcular, para não vazar informação do futuro.
+
+\bloco{Limiares}
+\begin{itemize}
+  \item $\tau_1 = -0{,}0234$ (percentil 33\%): preço cerca de 2,3\% abaixo da média.
+  \item $\tau_2 = 0{,}0953$ (percentil 67\%): preço cerca de 10\% acima da média.
+  \item Não são simétricos porque, de 2014 a 2021, o Bitcoin passou mais tempo acima da média de 50 dias.
+\end{itemize}
+
+\figura{limiares_tercis.png}{0.62\textwidth}{Distribuição de $x_t$ no treino e os limiares $\tau_1$ e $\tau_2$.}
+
+\bloco{Fórmula}
+\[
+  \phi(x) =
+  \begin{cases}
+    0 \ (\text{baixa}),  & x \le \tau_1 \\
+    1 \ (\text{neutro}), & \tau_1 < x \le \tau_2 \\
+    2 \ (\text{alta}),   & x > \tau_2
+  \end{cases}
+  \qquad
+  \tilde{s}_t = \big(\phi(x_t),\, \phi(x_{t-1}),\, h_{t-1}\big).
+\]
+São $3 \times 3 \times 3 = 27$ estados e $27 \times 3 = 81$ pares estado-ação. Na transição, a parte de mercado vem dos dados e a posição vem da ação: $\tilde{s}_{t+1} = (\phi(x_{t+1}), \phi(x_t), a_t)$. Os três métodos usam a mesma discretização.
+
+\bloco{Limitações}
+A quantização trata igual uma queda leve ($x_t = -0{,}025$) e um colapso ($x_t = -0{,}60$). O padrão $(0,2)$, uma queda de alta para baixa em um só dia, nunca ocorre no treino.
+
+% =============================================================
+\section{Modelo estimado e \textit{Value Iteration}}
+\label{sec:vi}
+
+\subsection{Estimação de \texorpdfstring{$\widehat{P}$}{P} e \texorpdfstring{$\widehat{R}$}{R}}
+
+O robô não mexe no preço do Bitcoin. Então só a parte de mercado da transição é aleatória: basta contar, no treino, quantas vezes cada par (hoje, ontem) foi seguido de cada faixa amanhã. A posição seguinte é a própria ação.
+
+\bloco{Fórmulas}
+Com $i = \phi(x_t)$, $k = \phi(x_{t-1})$ e $j = \phi(x_{t+1})$:
+\[
+  \hat{p}(j \mid i,k) = \frac{N(i,k,j)}{\sum_{j'} N(i,k,j')}, \qquad
+  \widehat{P}(s' \mid s,a) = \begin{cases} \hat{p}(j \mid i,k) & \text{se } s = (i,k,h) \text{ e } s' = (j,i,a) \\ 0 & \text{caso contrário} \end{cases}
+\]
+\[
+  \widehat{R}(s,a,s') = \frac{1}{N(i,k,j)} \sum_{t} \ln\!\big(1 + a\, r_{t+1} - \kappa\, |a - h|\big).
+\]
+
+\bloco{Por que contar é o estimador certo}
+\begin{itemize}
+  \item \textbf{Probabilidade condicional:} $P(A \mid B) = P(A \cap B)/P(B)$ restringe o espaço amostral aos casos em que $B$ aconteceu. É o que $\hat{p}(j \mid i,k)$ faz: entre os dias com o par $(i,k)$, conta a fração seguida da faixa $j$.
+  \item \textbf{Máxima verossimilhança:} para cada par $(i,k)$, a faixa de amanhã é uma variável categórica, e o estimador de máxima verossimilhança é exatamente a frequência relativa.
+  \item \textbf{Lei dos Grandes Números:} a frequência relativa é uma média de indicadoras ($\mathbb{E}[\mathbf{1}_A] = P(A)$) e converge para a probabilidade real. O erro cai como $\sigma/\sqrt{n}$, então $\widehat{P}$ e $\widehat{R}$ são confiáveis nas transições frequentes e frágeis nas raras, como $(2,0)$. Os dias não são independentes, mas a convergência continua valendo numa cadeia ergódica.
+\end{itemize}
+
+\begin{center}
+\small
+\begin{tabular}{c c ccc}
+  \toprule
+  $(i,k) = (\phi(x_t), \phi(x_{t-1}))$ & Regime & $j = 0$ & $j = 1$ & $j = 2$ \\
+  \midrule
+  (0,0) & Baixa estável        & 0,933 & 0,065 & 0,001 \\
+  (0,1) & Neutro $\to$ baixa   & 0,915 & 0,085 & 0,000 \\
+  (0,2) & Alta $\to$ baixa     & 0,333 & 0,333 & 0,333 \\
+  \midrule
+  (1,0) & Baixa $\to$ neutro   & 0,310 & 0,690 & 0,000 \\
+  (1,1) & Neutro estável       & 0,053 & 0,889 & 0,057 \\
+  (1,2) & Alta $\to$ neutro    & 0,016 & 0,672 & 0,312 \\
+  \midrule
+  (2,0) & Baixa $\to$ alta     & 0,000 & 1,000 & 0,000 \\
+  (2,1) & Neutro $\to$ alta    & 0,000 & 0,333 & 0,667 \\
+  (2,2) & Alta estável         & 0,000 & 0,052 & 0,948 \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+\bloco{Leitura}
+As faixas são persistentes: a baixa estável continua em baixa em 93,3\% dos dias, e a alta estável, em 94,8\%. O padrão $(0,2)$ nunca ocorre no treino; nele se usa a distribuição uniforme e retorno nulo.
+
+\begin{exemplo}{quanto dura um regime (supondo Markov)}
+Na baixa estável $(0,0)$, amanhã continua em baixa com $p = 0{,}933$, e o par volta a ser $(0,0)$.
+\begin{itemize}
+  \item Continuar em baixa por mais 2 dias: $0{,}933^2 \approx 0{,}870$. Por mais 5 dias: $0{,}933^5 \approx 0{,}707$.
+  \item O número de dias seguidos no regime segue uma distribuição geométrica, com média $1/(1 - p) = 1/0{,}067 \approx 15$ dias. Na alta estável, $1/(1 - 0{,}948) \approx 19$ dias.
+\end{itemize}
+Os regimes duram semanas: por isso olhar a faixa de hoje e a de ontem ajuda a decidir.
+\end{exemplo}
+
+\subsection{\textit{Value Iteration}}
+
+Começa com $V_0(s) = 0$ em todos os estados. A cada rodada, cada estado escolhe a ação que maximiza a recompensa esperada mais $\gamma$ vezes o valor do próximo estado; o valor do futuro se propaga um passo para trás por rodada, até estabilizar:
+\[
+  V_{k+1}(s) = \max_{a} \sum_{s'} \widehat{P}(s' \mid s,a)\,\big[\widehat{R}(s,a,s') + \gamma\, V_k(s')\big], \qquad
+  \pi^*(s) = \arg\max_{a} Q^*(s,a).
+\]
+O critério de parada é $\max_s |V_{k+1}(s) - V_k(s)| < \varepsilon$. No projeto, com $\varepsilon = 10^{-12}$, foram 98 iterações; o VI chegou a 99\% do valor ótimo já na iteração 15.
+
+\begin{exemplo}{duas iterações à mão (números hipotéticos, $\gamma = 0{,}8$)}
+No estado $A$, comprar leva a $A$ com 70\% de chance (recompensa $+0{,}02$) e a $B$ com 30\% (recompensa $-0{,}03$, $V(B) = 0$). Ficar fora dá 0.
+
+\textbf{Iteração 1} (partindo de $V_0 = 0$):
+\[
+  Q_1(A,+1) = 0{,}70 \times 0{,}02 + 0{,}30 \times (-0{,}03) = 0{,}0050 \;\Rightarrow\; V_1(A) = 0{,}0050
+\]
+\textbf{Iteração 2:}
+\[
+  \begin{aligned}
+    Q_2(A,+1) &= 0{,}70 \times (0{,}02 + 0{,}8 \times 0{,}0050) + 0{,}30 \times (-0{,}03) \\
+              &= 0{,}0168 - 0{,}0090 = 0{,}0078 \;\Rightarrow\; V_2(A) = 0{,}0078
+  \end{aligned}
+\]
+\end{exemplo}
+
+\bloco{Por que converge}
+O VI aplica repetidamente o operador $(TV)(s) = \max_a \sum_{s'} P(s' \mid s,a)\,[R(s,a,s') + \gamma V(s')]$.
+\begin{enumerate}
+  \item \textbf{Lema:} $\big|\max_a f(a) - \max_a g(a)\big| \le \max_a |f(a) - g(a)|$. Se $\max f \ge \max g$ e $a^*$ é o argmax de $f$, então $\max f - \max g \le f(a^*) - g(a^*) \le \max_a |f(a) - g(a)|$.
+  \item \textbf{Contração:} com o lema, as recompensas se cancelam e só sobra $\gamma$:
+  \[
+    \begin{aligned}
+      |(TV_1)(s) - (TV_2)(s)| &\le \max_a \Big|\gamma \sum_{s'} P(s' \mid s,a)\,\big(V_1(s') - V_2(s')\big)\Big| \\
+                              &\le \gamma \max_a \sum_{s'} P(s' \mid s,a)\, \|V_1 - V_2\|_\infty = \gamma\, \|V_1 - V_2\|_\infty.
+    \end{aligned}
+  \]
+  \item \textbf{Ponto fixo de Banach:} existe um único $V^*$ com $TV^* = V^*$, e $V_k \to V^*$ partindo de qualquer $V_0$. O erro cai pelo menos pelo fator $\gamma$ a cada iteração: $\|V_k - V^*\|_\infty \le \gamma^k\, \|V_0 - V^*\|_\infty$.
+  \item \textbf{Garantia do critério de parada:} se $\|V_{k+1} - V_k\| < \varepsilon$, então
+  \[
+    \|V_{k+1} - V^*\| \le \gamma\, \|V_k - V^*\| \le \gamma\,\big(\|V_k - V_{k+1}\| + \|V_{k+1} - V^*\|\big)
+    \;\Longrightarrow\; \|V_{k+1} - V^*\| < \frac{\gamma\,\varepsilon}{1 - \gamma}.
+  \]
+  Com $\gamma = 0{,}8$ e $\varepsilon = 10^{-12}$, o erro final é menor que $4 \times 10^{-12}$.
+\end{enumerate}
+
+\subsection{\textit{Policy Iteration}, a alternativa}
+
+Alterna dois passos: \textbf{avaliar} $\pi$ (resolvendo o sistema linear da forma matricial) e \textbf{melhorar}, com $\pi'(s) = \arg\max_a Q^\pi(s,a)$. Para quando a política não muda mais.
+
+\bloco{Teorema da melhoria}
+Se $Q^\pi(s, \pi'(s)) \ge V^\pi(s)$ em todo $s$, então $V^{\pi'}(s) \ge V^\pi(s)$ em todo $s$. A prova aplica a hipótese um passo de cada vez:
+\[
+  \begin{aligned}
+    V^\pi(s) &\le Q^\pi(s, \pi'(s)) = \mathbb{E}_{\pi'}\big[R_{t+1} + \gamma V^\pi(S_{t+1}) \mid S_t = s\big] \\
+             &\le \mathbb{E}_{\pi'}\big[R_{t+1} + \gamma R_{t+2} + \gamma^2 V^\pi(S_{t+2}) \mid S_t = s\big]
+              \le \dots \le V^{\pi'}(s).
+  \end{aligned}
+\]
+Como cada melhoria aumenta o valor ou para, nenhuma política se repete; e há um número finito de políticas determinísticas ($3^{27} \approx 7{,}6 \times 10^{12}$). Logo o PI termina. VI e PI chegam ao mesmo $V^*$.
+
+\subsection{Política ótima do VI}
+
+\begin{center}
+\small
+\begin{tabular}{c l ccc}
+  \toprule
+  $(i,k)$ & Regime & $h_{t-1} = -1$ & $h_{t-1} = 0$ & $h_{t-1} = +1$ \\
+  \midrule
+  (0,0) & Baixa estável      & $0$  & $0$  & $+1$ \\
+  (0,1) & Neutro $\to$ baixa & $-1$ & $-1$ & $-1$ \\
+  (0,2) & Alta $\to$ baixa   & $-1$ & $0$  & $+1$ \\
+  \midrule
+  (1,0) & Baixa $\to$ neutro & $-1$ & $0$  & $0$  \\
+  (1,1) & Neutro estável     & $0$  & $0$  & $+1$ \\
+  (1,2) & Alta $\to$ neutro  & $+1$ & $+1$ & $+1$ \\
+  \midrule
+  (2,0) & Baixa $\to$ alta   & $-1$ & $-1$ & $-1$ \\
+  (2,1) & Neutro $\to$ alta  & $+1$ & $+1$ & $+1$ \\
+  (2,2) & Alta estável       & $+1$ & $+1$ & $+1$ \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+\begin{itemize}
+  \item \textbf{Baixa estável:} fica fora, ou segue no \textit{long} se já estava comprado.
+  \item \textbf{Entrando na baixa} $(0,1)$: vende.
+  \item \textbf{Neutro estável:} só mantém o \textit{long} já aberto; sem posição, fica fora.
+  \item \textbf{Alta e alta $\to$ neutro} $(2,2)$, $(2,1)$, $(1,2)$: compra.
+  \item \textbf{Baixa $\to$ alta} $(2,0)$: vende, mas esse salto é raro no treino.
+  \item \textbf{Padrão $(0,2)$}, que não ocorre no treino: mantém a posição, porque sem dados a única recompensa é o custo da troca.
+\end{itemize}
+Nos estados estáveis, ``manter o \textit{long} já aberto'' reflete a corretagem (trocar custa) e o viés de alta do treino.
+
+% =============================================================
+\section{Métricas de avaliação}
+\label{sec:metricas}
+
+Comparar estratégias só pelo retorno total engana: uma estratégia pode dobrar o capital passando por uma queda de 80\% no caminho. Por isso usamos várias métricas, e cada uma olha um lado do resultado.
+
+\begin{center}
+\small
+\begin{tabular}{L{2.6cm} L{9.2cm} L{2.9cm}}
+  \toprule
+  \textbf{Métrica} & \textbf{O que responde} & \textbf{Melhor quando} \\
+  \midrule
+  Retorno total & Quanto o dinheiro cresceu do início ao fim? & maior \\
+  Retorno anual & Quanto isso dá por ano? & maior \\
+  Sharpe        & Quanto se ganhou acima da renda fixa para cada unidade de oscilação? & maior \\
+  MDD           & Qual foi a pior queda do patrimônio, de um pico até o fundo? & mais perto de 0 \\
+  Calmar        & Quanto se ganhou por ano para cada ponto dessa pior queda? & maior \\
+  Trocas        & Quantas vezes a posição mudou e pagou corretagem? & menor \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+\bloco{Retorno total e retorno anual}
+O retorno total é quanto o patrimônio cresceu, $W_T/W_0 - 1$. No teste, o VI fez 127,80\%: US\$ 1.000 viraram cerca de US\$ 2.278.
+
+O retorno anual converte isso numa taxa por ano, como se o patrimônio tivesse crescido igual todo ano. Serve para comparar períodos de tamanhos diferentes: o treino tem 7 anos, e o teste, quase 5.
+\[
+  (1 + R)^{T/365} = \frac{W_T}{W_0} \;\Longrightarrow\; R_{\text{anual}} = \Big(\frac{W_T}{W_0}\Big)^{365/T} - 1.
+\]
+Os 127,80\% do VI em quase 5 anos equivalem a 18,37\% ao ano.
+
+\bloco{Índice de Sharpe}
+Mede o retorno \textbf{por unidade de risco}. O numerador é quanto a estratégia rendeu acima do que se ganharia sem risco; o denominador, quanto o patrimônio oscila de um dia para o outro. Entre duas estratégias com o mesmo retorno, a que oscila menos tem Sharpe maior.
+\[
+  S = \sqrt{365}\,\frac{\bar{e}}{\sigma_e}, \qquad e_t = \ln\frac{W_t}{W_{t-1}} - r^f_t, \qquad r^f_t = \frac{\ln(1 + i_t)}{365}.
+\]
+\begin{itemize}
+  \item $e_t$ é o retorno do dia acima da taxa livre de risco; $\bar e$ é a média desses retornos, e $\sigma_e$, o desvio padrão.
+  \item A taxa livre $i_t$ é o T-bill americano de 3 meses, porque o BTC é cotado em dólar: média de 0,78\% a.a. no treino e 3,94\% a.a. no teste.
+  \item \textbf{Como ler:} Sharpe 0 quer dizer que a estratégia rendeu o mesmo que a renda fixa; negativo, que rendeu menos; quanto maior, melhor. No teste, o \textit{Buy \& Hold} subiu 31,95\%, mas oscilou tanto que o Sharpe ficou em 0,04; o do VI foi 0,46.
+  \item \textbf{Por que $\sqrt{365}$:} se os $e_t$ forem i.i.d., em 365 dias a média se soma ($365\,\bar e$) e a variância também, então o desvio cresce com a raiz ($\sqrt{365}\,\sigma_e$). A razão anual fica $365\,\bar e/(\sqrt{365}\,\sigma_e) = \sqrt{365}\,\bar e/\sigma_e$. Em ações, que negociam cerca de 252 dias por ano, seria $\sqrt{252}$.
+\end{itemize}
+
+\bloco{\textit{Maximum drawdown} (MDD)}
+A pior queda do patrimônio, medida de um pico até o fundo seguinte. Responde: ``quanto eu teria perdido se tivesse entrado no pior momento?''
+\[
+  \mathrm{MDD} = \min_t \left(\frac{W_t}{P_t} - 1\right), \qquad P_t = \max_{u \le t} W_u \ \ \text{(o maior patrimônio até o dia $t$)}.
+\]
+No teste, o MDD do \textit{Buy \& Hold} foi $-66{,}93\%$: em algum momento, o patrimônio caiu para cerca de um terço do pico anterior. O do VI foi $-29{,}35\%$.
+
+\bloco{Índice de Calmar}
+O retorno anual dividido pelo tamanho da pior queda: quanto se ganha por ano para cada ponto de queda que foi preciso aguentar.
+\[
+  \text{Calmar} = \frac{R_{\text{anual}}}{|\mathrm{MDD}|}.
+\]
+No teste, o VI tem $18{,}37/29{,}35 \approx 0{,}63$; o \textit{Buy \& Hold}, $5{,}84/66{,}93 \approx 0{,}09$. O Sharpe pune toda oscilação; o Calmar pune só o pior tombo.
+
+\bloco{Trocas}
+Quantas vezes a posição mudou. Cada troca paga corretagem, então, para o mesmo resultado, menos trocas é melhor. No teste, o Q-learning trocou 190 vezes, e o VI, 113.
+
+\bloco{Por que essas métricas fazem sentido aqui}
+\begin{itemize}
+  \item O retorno anual é o próprio objetivo do agente: a soma das recompensas é o log do patrimônio final.
+  \item O Sharpe compara estratégias com exposições muito diferentes (o RL fica fora boa parte do tempo, o \textit{Buy \& Hold} nunca sai).
+  \item O MDD é essencial no Bitcoin: o \textit{Buy \& Hold} caiu 83\% no treino e 67\% no teste.
+  \item O número de trocas importa porque a corretagem está na recompensa.
+  \item Os modelos econométricos não fazem o mesmo tipo de previsão que o RL; comparar todos pelo patrimônio, com a mesma corretagem, é a única base comum.
+  \item No simulador, o caixa não rende juros, mas o Sharpe desconta a taxa livre. Isso penaliza quem fica fora, ou seja, o RL. A escolha é conservadora.
+\end{itemize}
+
+\bloco{Erro amostral do Sharpe}
+O Sharpe é uma estimativa. Com retornos i.i.d. e $T$ dias:
+\[
+  \mathrm{ep}(\hat S_{\text{diário}}) \approx \sqrt{\frac{1 + \hat S_{\text{diário}}^2/2}{T}}
+  \quad\Longrightarrow\quad
+  \mathrm{ep}(\hat S_{\text{anual}}) \approx \sqrt{\frac{365}{T}}.
+\]
+No teste, $T = 1.783$ dias: o erro padrão do Sharpe anual é cerca de $\sqrt{365/1.783} \approx 0{,}45$, e um intervalo aproximado de 95\% para o Sharpe do VI seria $0{,}46 \pm 0{,}89$.
+
+\begin{defesa}
+Com 5 anos de teste, \textbf{nenhuma diferença isolada de Sharpe é estatisticamente significativa}: 0,46 contra 0,44 está dentro do ruído. O argumento do trabalho é a consistência: os três RL acima de todos os econométricos em Sharpe e Calmar, com queda máxima menor que a de todos eles, e resultados parecidos com 5 sementes. Comparar dois Sharpe formalmente exigiria considerar a correlação entre as estratégias (teste de Jobson--Korkie), o que não fizemos.
+\end{defesa}
+
+% =============================================================
+\section{Monte Carlo}
+
+Estimar $\widehat{P}$ supõe que o mercado segue um modelo de Markov discreto e estável. O Monte Carlo aprende $Q(s,a)$ direto do histórico, sem montar o modelo (\textit{model-free}).
+
+\bloco{Como funciona}
+\begin{itemize}
+  \item 30.000 episódios de 84 dias sobre o histórico real do treino.
+  \item Cada episódio começa num dia sorteado, com posição inicial sorteada e primeira ação aleatória (\textit{exploring starts}).
+  \item No fim do episódio, calcula o retorno $G_t$ de cada passo, de trás para frente, e move a média $Q(s,a)$ na direção dele.
+  \item Só os primeiros $H = 42$ dias são atualizados, para que todo $G_t$ tenha pelo menos 42 recompensas futuras.
+\end{itemize}
+
+\bloco{Fórmulas}
+\[
+  G_t = R_{t+1} + \gamma\, G_{t+1}, \qquad
+  Q(s,a) \leftarrow Q(s,a) + \frac{1}{N(s,a)}\big[G_t - Q(s,a)\big], \qquad
+  \pi(s) = \arg\max_a Q(s,a).
+\]
+O passo $1/N$ faz de $Q(s,a)$ a média simples dos retornos. É a média incremental:
+\[
+  M_n = \frac{1}{n}\sum_{i=1}^{n} X_i = \frac{1}{n}\Big(X_n + (n-1)\,M_{n-1}\Big) = M_{n-1} + \frac{1}{n}\big(X_n - M_{n-1}\big).
+\]
+
+\begin{exemplo}{uma atualização (números hipotéticos)}
+$Q(s,a) = 0{,}010$ depois de 4 visitas. Num novo episódio, as recompensas seguintes são $+0{,}02$ e $+0{,}03$:
+\begin{itemize}
+  \item Retorno: $G_t = 0{,}02 + 0{,}8 \times 0{,}03 = 0{,}044$.
+  \item Quinta visita: $N = 5$, passo $1/5 = 0{,}20$.
+  \item $Q(s,a) \leftarrow 0{,}010 + 0{,}20 \times (0{,}044 - 0{,}010) = 0{,}0168$.
+\end{itemize}
+\end{exemplo}
+
+\bloco{\textit{First-visit} $\times$ \textit{every-visit}}
+\begin{itemize}
+  \item \textbf{First-visit:} em cada episódio, usa só a primeira passagem pelo par $(s,a)$. Os retornos vêm de episódios diferentes, são independentes, e a média é sem viés. Indicado quando há forte correlação temporal.
+  \item \textbf{Every-visit:} usa todas as passagens. Aproveita mais amostras e converge mais rápido, mas os retornos do mesmo episódio são correlacionados.
+\end{itemize}
+
+\begin{exemplo}{\textit{first-visit} $\times$ \textit{every-visit}}
+Dois episódios com $\gamma = 1$ e recompensa só no fim: $A \to B \to A \to C \to D$, com recompensa final 5, e $A \to A \to A \to B \to D$, com recompensa final 3. Toda visita a $A$ tem retorno igual à recompensa final do seu episódio.
+\begin{itemize}
+  \item \textit{First-visit}: uma visita por episódio, $V(A) = (5 + 3)/2 = 4{,}0$.
+  \item \textit{Every-visit}: duas visitas no 1º episódio e três no 2º, $V(A) = (5 + 5 + 3 + 3 + 3)/5 = 3{,}8$.
+\end{itemize}
+\end{exemplo}
+
+\bloco{Exploração $\varepsilon$-greedy}
+Com probabilidade $\varepsilon$, o robô sorteia uma ação; senão, escolhe a melhor:
+\[
+  \pi(a \mid s) =
+  \begin{cases}
+    1 - \varepsilon + \varepsilon/|\mathcal{A}| & \text{para a melhor ação} \\
+    \varepsilon/|\mathcal{A}|                   & \text{para as outras}
+  \end{cases}
+\]
+Com 3 ações e $\varepsilon = 0{,}1$: 0,933 e 0,033. No projeto, $\varepsilon$ cai linearmente de 1 para 0,05 nos primeiros 60\% dos episódios. Explorar demais deixa o aprendizado lento; explorar de menos arrisca convergir cedo para uma política ruim.
+
+\bloco{No projeto}
+\begin{itemize}
+  \item Com a semente 42, o \textit{every-visit} fez 1.260.000 atualizações (contra 388.071) e teve Sharpe no treino de 1,20 (contra 1,12). Por isso foi escolhido.
+  \item Mesmo com \textit{exploring starts}, só 72 dos 81 pares são visitados, porque o padrão $(0,2)$ nunca ocorre.
+\end{itemize}
+
+\bloco{O que o MC estima}
+\begin{itemize}
+  \item \textbf{Sem viés, mas com variância alta.} $G_t$ é uma amostra exata do retorno, mas soma muitas recompensas aleatórias. Se fossem independentes, com variância $\sigma^2$ cada:
+  \[
+    \mathrm{Var}(G_t) = \sum_{k \ge 0} \gamma^{2k}\sigma^2 = \frac{\sigma^2}{1 - \gamma^2} = \frac{\sigma^2}{0{,}36} \approx 2{,}8\,\sigma^2 \qquad (\gamma = 0{,}8).
+  \]
+  \item \textbf{Mistura de políticas.} Com passo $1/N$, $Q$ é a média de todos os retornos, inclusive os do começo do treino, quando $\varepsilon$ estava perto de 1. Então o $Q$ do MC não é exatamente $Q^*$; para o controle MC chegar à política ótima, $\varepsilon$ teria de ir a zero, e o nosso para em 0,05. Isso ajuda a explicar por que o MC fica mais longe de $Q^*$ que o Q-learning, mesmo com uma política melhor no teste.
+\end{itemize}
+
+% =============================================================
+\section{Q-learning}
+
+O Monte Carlo só atualiza no fim do episódio. O Q-learning atualiza a cada dia, usando a estimativa do próximo estado (\textit{bootstrap}).
+
+\bloco{Fórmulas}
+O erro de diferença temporal (TD) compara a estimativa atual com ``recompensa de hoje + valor descontado de amanhã'':
+\[
+  \delta_t = R_{t+1} + \gamma \max_{a'} Q(s',a') - Q(s,a), \qquad
+  Q(s,a) \leftarrow Q(s,a) + \frac{1}{N(s,a)}\,\delta_t.
+\]
+O alvo usa a melhor ação em $s'$, não a ação realmente tomada: o Q-learning aprende o valor da política gulosa enquanto segue a exploratória. Por isso é \textit{off-policy}. Ao usar o próximo estado, supõe, como o VI, que o estado é Markov.
+
+\begin{exemplo}{um passo (números hipotéticos)}
+$Q(s,+1) = 0{,}010$ com passo $1/5 = 0{,}20$. O robô compra, recebe $R_{t+1} = 0{,}015$ e vai para $s'$, onde $Q(s',-1) = -0{,}01$, $Q(s',0) = 0{,}005$ e $Q(s',+1) = 0{,}025$.
+\begin{itemize}
+  \item Melhor valor em $s'$: $\max_{a'} Q(s',a') = 0{,}025$.
+  \item Alvo: $0{,}015 + 0{,}8 \times 0{,}025 = 0{,}035$.
+  \item $Q(s,+1) \leftarrow 0{,}010 + 0{,}20 \times (0{,}035 - 0{,}010) = 0{,}015$.
+\end{itemize}
+\end{exemplo}
+
+\bloco{SARSA $\times$ Q-learning}
+O SARSA usa no alvo a ação realmente tomada, $Q(s', a')$: é \textit{on-policy} e aprende o valor da política exploratória. O Q-learning usa o máximo.
+
+\begin{exemplo}{SARSA $\times$ Q-learning no mesmo passo}
+Mesmos números. Suponha que a política $\varepsilon$-greedy, explorando, escolha em $s'$ a ação $0$, com $Q(s',0) = 0{,}005$.
+\begin{itemize}
+  \item SARSA: alvo $= 0{,}015 + 0{,}8 \times 0{,}005 = 0{,}019$, e $Q(s,+1) \leftarrow 0{,}010 + 0{,}20 \times 0{,}009 = 0{,}0118$.
+  \item Q-learning: alvo $= 0{,}015 + 0{,}8 \times 0{,}025 = 0{,}035$, e $Q(s,+1) \leftarrow 0{,}015$.
+\end{itemize}
+O Q-learning aprende o valor da política gulosa, que é a que executamos no teste.
+\end{exemplo}
+
+\bloco{Monte Carlo $\times$ TD}
+O MC tem alta variância e baixo viés; o TD, menor variância e maior viés (enquanto a estimativa do próximo estado está errada). A ligação entre os dois: com $V$ fixo durante o episódio e $V = 0$ no fim, somando e subtraindo $\gamma V(S_{t+1})$,
+\[
+  G_t - V(S_t) = \delta_t + \gamma\big(G_{t+1} - V(S_{t+1})\big) = \delta_t + \gamma\,\delta_{t+1} + \gamma^2\,\delta_{t+2} + \dots
+\]
+O MC corrige com a soma inteira no fim; o TD corrige com o primeiro termo a cada passo.
+
+\bloco{Por que o Q-learning aprende $Q^*$}
+Se $Q = Q^*$, o valor esperado do alvo é o próprio $Q^*$, pela equação de otimalidade:
+\[
+  \mathbb{E}\Big[R_{t+1} + \gamma \max_{a'} Q^*(S_{t+1}, a') \;\Big|\; s, a\Big]
+  = \sum_{s'} P(s' \mid s,a)\Big[R(s,a,s') + \gamma \max_{a'} Q^*(s',a')\Big] = Q^*(s,a).
+\]
+$Q^*$ é o ponto em que a atualização, em média, não mexe mais. A política que gerou os dados só decide quais pares são visitados.
+
+\bloco{Condições de convergência}
+Todos os pares visitados infinitas vezes, $\gamma < 1$, estado Markov e passos com $\sum_n \alpha_n = \infty$ e $\sum_n \alpha_n^2 < \infty$. O passo $1/n$ cumpre as duas: $\sum 1/n$ (série harmônica) diverge e $\sum 1/n^2 = \pi^2/6$. Um $\alpha$ constante não cumpre a segunda: a estimativa continua oscilando, o que ajuda quando o ambiente muda, mas não converge.
+
+\bloco{Por que ele fica perto do $Q^*$ do VI}
+Com passo $1/N$, cada $Q(s,a)$ é a média dos alvos observados depois de $(s,a)$ no histórico. No limite, isso se aproxima de
+\[
+  Q(s,a) \approx \sum_{s'} \widehat{P}(s' \mid s,a)\Big[\widehat{R}(s,a,s') + \gamma \max_{a'} Q(s',a')\Big],
+\]
+a equação de otimalidade do \textbf{mesmo modelo empírico} que o VI resolve (equivalência de certeza). Se o estado fosse exatamente Markov e a amostra infinita, os dois coincidiriam.
+
+\bloco{Superestimação}
+O máximo de estimativas ruidosas tende a passar do máximo verdadeiro: $\mathbb{E}[\max_a \widehat{Q}(a)] \ge \max_a \mathbb{E}[\widehat{Q}(a)]$. Exemplo: duas ações com valor real 0 e estimativas de $+0{,}01$ ou $-0{,}01$, com 50\% de chance cada e independentes. O máximo só é $-0{,}01$ se as duas saírem negativas (25\%), então $\mathbb{E}[\max] = 0{,}75 \times 0{,}01 - 0{,}25 \times 0{,}01 = 0{,}005 > 0$.
+
+\subsection{Os três métodos lado a lado}
+
+\begin{center}
+\small
+\begin{tabular}{l ccc}
+  \toprule
+  & \textbf{\textit{Value Iteration}} & \textbf{Monte Carlo} & \textbf{Q-learning} \\
+  \midrule
+  Precisa do modelo?   & sim ($\widehat{P}$, $\widehat{R}$) & não                & não \\
+  Alvo da atualização  & $\sum_{s'} \widehat{P}\,[\widehat{R} + \gamma V(s')]$ & retorno real $G_t$ & $R_{t+1} + \gamma \max_{a'} Q(s',a')$ \\
+  Quando atualiza      & todos os estados                   & fim do episódio     & a cada passo \\
+  Supõe Markov?        & sim                                & no alvo, não        & sim \\
+  Aprende              & --                                 & \textit{on-policy}  & \textit{off-policy} \\
+  \midrule
+  Custo do treino      & 98 iterações                       & 1.260.000           & 2.520.000 \\
+  Sharpe no treino     & 1,09                               & 1,20                & 1,37 \\
+  \bottomrule
+\end{tabular}
+
+\smallskip
+{\footnotesize Custo de MC e QL em atualizações de $Q$; Sharpe com a semente 42.}
+\end{center}
+
+\begin{center}
+\small
+\begin{tabular}{L{2.4cm} L{4.2cm} L{7.6cm}}
+  \toprule
+  \textbf{Método} & \textbf{Converge para} & \textbf{Condições} \\
+  \midrule
+  \textit{Value Iteration}  & $V^*$ e $\pi^*$ do modelo estimado & $\gamma < 1$ (contração) \\
+  \textit{Policy Iteration} & $\pi^*$ do modelo estimado & estados e ações finitos \\
+  Monte Carlo               & melhor política $\varepsilon$-gulosa; ótima só se $\varepsilon \to 0$ & todos os pares visitados, $\varepsilon > 0$ \\
+  Q-learning                & $Q^*$ & todos os pares infinitas vezes, $\sum \alpha = \infty$, $\sum \alpha^2 < \infty$, estado Markov \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+% =============================================================
+\section{Escolha de \texorpdfstring{$\gamma$}{gama}}
+\label{sec:gamma}
+
+$\gamma$ define o \textbf{objetivo} do agente, não é só um ajuste fino. Como a soma das recompensas é o log do patrimônio final, maximizar a carteira exige valorizar o futuro; com $\gamma$ perto de 1, o objetivo se aproxima do critério de Kelly. Com $\gamma$ baixo, o agente fica míope.
+
+\bloco{A bateria de validação}
+Tudo foi refeito para cada $\gamma$, com treino até 2018 e avaliação em 2019--2021, sem usar o teste. O horizonte $H$ acompanha $\gamma$, e Monte Carlo e Q-learning usam a média de 5 sementes.
+
+\begin{center}
+\small
+\begin{tabular}{c c c cccc}
+  \toprule
+  $\gamma$ & Peso em 5 dias ($\gamma^5$) & Episódio (dias) & VI & MC & QL & Média \\
+  \midrule
+  0,3  & 0,2\%  & 16  & 1,70 & 1,67 & 1,69 & 1,69 \\
+  0,5  & 3,1\%  & 28  & 1,70 & 1,67 & 1,57 & 1,65 \\
+  0,7  & 16,8\% & 52  & 1,59 & 1,54 & 1,40 & 1,51 \\
+  \midrule
+  \textbf{0,8} & \textbf{32,8\%} & \textbf{84} & \textbf{1,59} & \textbf{1,42} & \textbf{1,20} & \textbf{1,40} \\
+  0,9  & 59,0\% & 176 & 1,59 & 1,17 & 1,16 & 1,31 \\
+  0,95 & 77,4\% & 360 & 1,59 & 1,18 & 1,17 & 1,31 \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+\begin{defesa}
+\begin{itemize}
+  \item O $\gamma = 0{,}8$ foi fixado antes, pelo objetivo. A bateria só confere a sensibilidade.
+  \item $\gamma$ menor vai melhor na validação, mas olha só 1 a 2 dias à frente: com $\gamma = 0{,}3$, o 5º dia pesa 0,2\%.
+  \item O $\gamma = 0{,}8$ já desconta forte (o 5º dia pesa 32,8\%). O que se evita é o extremo míope, que ignora que a posição de hoje define o custo de amanhã.
+  \item Entre os $\gamma \ge 0{,}8$, o 0,8 tem o maior Sharpe médio. O VI quase não muda com $\gamma$.
+  \item Validação $\neq$ teste: outro período e treino só até 2018, por isso o Sharpe é outro.
+  \item No teste, consultado só por transparência, o Sharpe do VI é o mesmo (0,46) para todo $\gamma \le 0{,}8$, e o Q-learning é o mais sensível a $\gamma$.
+\end{itemize}
+\end{defesa}
+
+% =============================================================
+\section{Políticas, convergência e sementes}
+\label{sec:sementes}
+
+\bloco{Política aprendida pelos três métodos (semente 42)}
+\begin{center}
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{c l ccc ccc ccc}
+  \toprule
+  & & \multicolumn{3}{c}{\textbf{VI} ($h_{t-1}$)} & \multicolumn{3}{c}{\textbf{MC} ($h_{t-1}$)} & \multicolumn{3}{c}{\textbf{QL} ($h_{t-1}$)} \\
+  \cmidrule(lr){3-5} \cmidrule(lr){6-8} \cmidrule(lr){9-11}
+  \textbf{Estado} & \textbf{Regime} & $-1$ & $0$ & $+1$ & $-1$ & $0$ & $+1$ & $-1$ & $0$ & $+1$ \\
+  \midrule
+  (0,0) & Baixa estável      & $0$ & $0$ & $+1$ & $0$ & $0$ & $+1$ & $0$ & $0$ & $+1$ \\
+  (0,1) & Neutro $\to$ baixa & $-1$ & $-1$ & $\dif{-1}$ & $-1$ & $-1$ & $\dif{0}$ & $-1$ & $-1$ & $\dif{0}$ \\
+  (0,2) & Alta $\to$ baixa   & $\dif{-1}$ & $0$ & $\dif{+1}$ & $\dif{0}$ & $0$ & $\dif{0}$ & $\dif{0}$ & $0$ & $\dif{0}$ \\
+  \midrule
+  (1,0) & Baixa $\to$ neutro & $\dif{-1}$ & $\dif{0}$ & $\dif{0}$ & $\dif{0}$ & $\dif{0}$ & $\dif{-1}$ & $\dif{0}$ & $\dif{-1}$ & $\dif{0}$ \\
+  (1,1) & Neutro estável     & $0$ & $\dif{0}$ & $+1$ & $0$ & $\dif{0}$ & $+1$ & $0$ & $\dif{+1}$ & $+1$ \\
+  (1,2) & Alta $\to$ neutro  & $+1$ & $+1$ & $+1$ & $+1$ & $+1$ & $+1$ & $+1$ & $+1$ & $+1$ \\
+  \midrule
+  (2,0) & Baixa $\to$ alta   & $-1$ & $-1$ & $-1$ & $-1$ & $-1$ & $-1$ & $-1$ & $-1$ & $-1$ \\
+  (2,1) & Neutro $\to$ alta  & $+1$ & $+1$ & $+1$ & $+1$ & $+1$ & $+1$ & $+1$ & $+1$ & $+1$ \\
+  (2,2) & Alta estável       & $+1$ & $+1$ & $+1$ & $+1$ & $+1$ & $+1$ & $+1$ & $+1$ & $+1$ \\
+  \bottomrule
+\end{tabular}
+
+\smallskip
+{\footnotesize Em negrito, os estados em que os métodos discordam.}
+\end{center}
+
+\begin{itemize}
+  \item Os três escolhem a mesma ação em 20 dos 27 estados; MC e QL concordam em 24.
+  \item Nos regimes de alta, os três compram em $(2,1)$, $(2,2)$ e $(1,2)$ e vendem no salto $(2,0)$.
+  \item As diferenças ficam perto da baixa e no neutro. No neutro estável sem posição, o Q-learning compra; VI e MC ficam fora.
+\end{itemize}
+
+\bloco{Convergência}
+O $Q^*$ do VI no mesmo MDP serve como referência teórica. Na média das 5 sementes, o Q-learning chega mais perto de $Q^*$ (erro médio de 0,005, contra 0,007 do MC), mas varia mais entre as sementes. Nos dois, a política final coincide com a do VI em cerca de três quartos dos estados. O padrão $(0,2)$ nunca é visitado e não tem como ser aprendido.
+
+\figura{curva_sementes.png}{\textwidth}{Convergência em 5 sementes: política igual à do VI (esquerda) e erro médio $|Q - Q^*|$ (direita).}
+
+\bloco{Variabilidade entre sementes}
+Os resultados principais usam a semente 42. Monte Carlo e Q-learning foram repetidos com as sementes 42 a 46:
+
+\begin{center}
+\small
+\begin{tabular}{l c ccc}
+  \toprule
+  & \textbf{Treino} & \multicolumn{3}{c}{\textbf{Teste (2022 a 2026)}} \\
+  \cmidrule(lr){2-2} \cmidrule(lr){3-5}
+  \textbf{Método} & \textbf{Sharpe} & \textbf{Sharpe} & \textbf{MDD} & \textbf{Calmar} \\
+  \midrule
+  MC \textit{first-visit} & 1,42 (0,17) & 0,30 (0,26) & $-$39,07\% (19,31\%) & 0,44 (0,39) \\
+  MC \textit{every-visit} & 1,17 (0,04) & 0,34 (0,09) & $-$33,24\% (7,94\%)  & 0,47 (0,17) \\
+  Q-learning              & 1,31 (0,10) & 0,24 (0,12) & $-$49,58\% (13,24\%) & 0,27 (0,12) \\
+  \bottomrule
+\end{tabular}
+
+\smallskip
+{\footnotesize Média (desvio padrão) em 5 sementes.}
+\end{center}
+
+\begin{itemize}
+  \item O \textit{every-visit} é o mais estável: menor desvio no teste.
+  \item Na semente 42, o \textit{every-visit} venceu no treino (1,20 contra 1,12); na média das 5 sementes, o \textit{first-visit} vence no treino (1,42 contra 1,17). A escolha do \textit{every-visit} dependeu da sorte, embora ele tenha o melhor Sharpe médio e a menor variação no teste.
+  \item O mais variável é o MC \textit{first-visit} (desvio de 0,26 no Sharpe do teste), não o Q-learning.
+  \item O Q-learning tem o menor Sharpe médio no teste (0,24) e escolhe a mesma ação nas 5 sementes em 21 dos 27 estados.
+\end{itemize}
+
+% =============================================================
+\section{Resultados no teste}
+
+O teste começa perto de um topo: o BTC caiu de cerca de US\$ 47 mil em janeiro de 2022 para cerca de US\$ 16 mil no fim de 2022. Por isso o \textit{Buy \& Hold} rende pouco, e o foco é o retorno ajustado ao risco.
+
+As políticas são avaliadas no \texttt{gym-trading-env}, um simulador com a interface padrão do Gymnasium: \texttt{env.reset()} devolve a observação inicial, e \texttt{env.step(a)} devolve a observação seguinte, a recompensa e os sinais de fim. A observação é $(\phi(x_t), \phi(x_{t-1}))$, a corretagem é $\kappa$ e o patrimônio começa em US\$ 1.000. O treino do MC e do QL não usa o simulador: percorre o histórico direto, com a mesma recompensa.
+
+\begin{center}
+\small
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{l cccccc}
+  \toprule
+  \textbf{Estratégia} & \textbf{Ret. total} & \textbf{Ret. anual} & \textbf{Sharpe} & \textbf{MDD} & \textbf{Calmar} & \textbf{Trocas} \\
+  \midrule
+  \multicolumn{7}{l}{\textit{Teste (2022 a 2026)}} \\
+  MDP (VI)                       & 127,80\%    & 18,37\%    & 0,46    & $-$29,35\% & 0,63    & 113 \\
+  Monte Carlo                    & 119,47\%    & 17,47\%    & 0,44    & $-$26,95\% & 0,65    & 108 \\
+  Q-learning                     & 86,39\%     & 13,60\%    & 0,26    & $-$51,25\% & 0,27    & 190 \\
+  \textit{Buy \& Hold}           & 31,95\%     & 5,84\%     & 0,04    & $-$66,93\% & 0,09    & 1 \\
+  Fora do mercado                & 0,00\%      & 0,00\%     & 0,00    & 0,00\%     & --      & 0 \\
+  Aleatória                      & $-$93,85\%  & $-$43,52\% & $-$1,45 & $-$94,58\% & $-$0,46 & 1.163 \\
+  \midrule
+  \multicolumn{7}{l}{\textit{Treino (2014 a 2021)}} \\
+  MDP (VI)                       & 6.947,44\%  & 81,24\%    & 1,09    & $-$50,59\% & 1,61    & 140 \\
+  Monte Carlo                    & 9.802,30\%  & 90,06\%    & 1,20    & $-$52,95\% & 1,70    & 119 \\
+  Q-learning                     & 26.866,84\% & 118,62\%   & 1,37    & $-$69,05\% & 1,72    & 195 \\
+  \textit{Buy \& Hold}           & 13.144,05\% & 97,94\%    & 0,90    & $-$83,40\% & 1,17    & 1 \\
+  Fora do mercado                & 0,00\%      & 0,00\%     & 0,00    & 0,00\%     & --      & 0 \\
+  Aleatória                      & $-$88,73\%  & $-$26,29\% & $-$0,52 & $-$95,74\% & $-$0,27 & 1.721 \\
+  \bottomrule
+\end{tabular}
+
+\smallskip
+{\footnotesize $\kappa = 0{,}1\%$, $\gamma = 0{,}8$; Monte Carlo \textit{every-visit}; Monte Carlo e Q-learning com a semente 42. ``Fora do mercado'' tem Sharpe 0 por convenção: sem volatilidade, o Sharpe não é definido.}
+\end{center}
+
+\bloco{Leitura}
+\begin{itemize}
+  \item \textbf{VI:} maior Sharpe no teste (0,46). \textbf{Monte Carlo:} menor queda máxima entre os RL ($-26{,}95\%$), sem conhecer o modelo.
+  \item \textbf{Q-learning:} maior Sharpe no treino (1,37), mas o pior dos três no teste (0,26). Aprendeu a comprar no neutro estável, o que pagou na alta de 2014--2021 e custou caro na queda de 2022. É o problema clássico de generalização: a política funciona no treino e falha fora dele.
+  \item Os três RL superam o \textit{Buy \& Hold} em retorno, Sharpe e MDD. VI e MC têm menos da metade da queda máxima do \textit{Buy \& Hold}.
+\end{itemize}
+
+\figura{grafico_teste.png}{0.85\textwidth}{Teste: preço do BTC, patrimônio das estratégias e posição escolhida pela política do VI.}
+
+\subsection{Com e sem corretagem}
+
+As mesmas políticas rodam de novo com $\kappa = 0$. As ações são idênticas: a diferença é só o custo das trocas.
+
+\begin{center}
+\small
+\begin{tabular}{l c cc cc c}
+  \toprule
+  & & \multicolumn{2}{c}{\textbf{Retorno anual}} & \multicolumn{2}{c}{\textbf{Sharpe}} & \\
+  \cmidrule(lr){3-4} \cmidrule(lr){5-6}
+  \textbf{Estratégia} & \textbf{Trocas} & \textbf{com} & \textbf{sem} & \textbf{com} & \textbf{sem} & \textbf{Custo (p.p. a.a.)} \\
+  \midrule
+  MDP (VI)             & 113   & 18,37\%    & 21,46\%    & 0,46    & 0,55    & 3,09  \\
+  Monte Carlo          & 108   & 17,47\%    & 20,09\%    & 0,44    & 0,51    & 2,62  \\
+  Q-learning           & 190   & 13,60\%    & 18,12\%    & 0,26    & 0,37    & 4,51  \\
+  \textit{Buy \& Hold} & 1     & 5,84\%     & 5,87\%     & 0,04    & 0,04    & 0,02  \\
+  Aleatória            & 1.163 & $-$43,52\% & $-$21,98\% & $-$1,45 & $-$0,68 & 21,54 \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+Quem troca mais paga mais: o Q-learning perde 4,51 pontos percentuais por ano. A ordem entre as estratégias não muda.
+
+\subsection{Política gulosa \texorpdfstring{$\times$ $\varepsilon$}{x epsilon}-greedy}
+
+No treino, o robô explora com $\varepsilon$-greedy. Na operação, vale manter $\varepsilon = 0{,}1$ (10\% de ações sorteadas) ou operar de forma gulosa ($a_t = \arg\max_a Q(s_t,a)$)?
+
+\begin{center}
+\small
+\begin{tabular}{l ccccc}
+  \toprule
+  \textbf{Política} & \textbf{Sharpe} & \textbf{MDD} & \textbf{Calmar} & \textbf{Trocas} & \textbf{$\varepsilon$ vence a gulosa} \\
+  \midrule
+  MDP: gulosa                       & 0,46 & $-$29,35\% & 0,63 & 113 & -- \\
+  MDP: $\varepsilon$-greedy         & 0,20 & $-$49,87\% & 0,29 & 286 & 24\% das sementes \\
+  \midrule
+  Monte Carlo: gulosa               & 0,44 & $-$26,95\% & 0,65 & 108 & -- \\
+  Monte Carlo: $\varepsilon$-greedy & 0,14 & $-$50,67\% & 0,24 & 289 & 21\% das sementes \\
+  \midrule
+  Q-learning: gulosa                & 0,26 & $-$51,25\% & 0,27 & 190 & -- \\
+  Q-learning: $\varepsilon$-greedy  & 0,04 & $-$59,22\% & 0,13 & 373 & 23\% das sementes \\
+  \bottomrule
+\end{tabular}
+
+\smallskip
+{\footnotesize Teste; $\varepsilon$-greedy com média de 100 sementes.}
+\end{center}
+
+A gulosa vence nos três métodos. Com $\varepsilon = 0{,}1$, as trocas mais que dobram (MDP: 113 $\to$ 286) e o Sharpe cai. Na operação, cada ação sorteada é uma decisão que o $Q$ aprendido considera pior, e ainda paga corretagem.
+
+% =============================================================
+\section{\textit{Benchmark}: RL \texorpdfstring{$\times$}{x} modelos econométricos}
+
+Seis modelos clássicos, todos estimados só no treino (até 2021). A cada dia, preveem o retorno de amanhã com dados até hoje, e a previsão vira posição: \textbf{previsão de alta $\to$ comprado ($+1$), senão vendido ($-1$)}. Diferente do RL, eles nunca ficam fora do mercado.
+
+\subsection{Passeio aleatório}
+
+\[
+  \ln c_{t+1} = \ln c_t + \mu + \varepsilon_{t+1} \quad\Longleftrightarrow\quad \rho_{t+1} = \mu + \varepsilon_{t+1}, \qquad \mathbb{E}[\varepsilon_{t+1}] = 0.
+\]
+A melhor previsão é $\mu$, estimada pela média do treino. Como $\hat\mu > 0$, a previsão é sempre de alta: comprado todo dia, ou seja, o \textit{Buy \& Hold}. É a hipótese de mercado eficiente na forma fraca: o passado dos preços não ajuda a prever o retorno.
+
+\subsection{AR(1), por mínimos quadrados}
+
+\[
+  \rho_{t+1} = \alpha + \phi\,\rho_t + \varepsilon_{t+1}, \qquad
+  \hat\phi = \frac{\sum_t (\rho_t - \bar\rho)(\rho_{t+1} - \bar\rho_+)}{\sum_t (\rho_t - \bar\rho)^2}, \qquad \hat\alpha = \bar\rho_+ - \hat\phi\,\bar\rho,
+\]
+em que $\bar\rho$ e $\bar\rho_+$ são as médias de $\rho_t$ e de $\rho_{t+1}$. $\hat\phi$ é praticamente a autocorrelação de ordem 1 dos retornos.
+\begin{itemize}
+  \item \textbf{Estacionariedade:} com $|\phi| < 1$, tomando a esperança dos dois lados, a média de longo prazo é $\mathbb{E}[\rho] = \alpha/(1 - \phi)$.
+  \item \textbf{Decisão:} comprado se $\hat\alpha + \hat\phi\,\rho_t > 0$. Com $\hat\phi > 0$, segue o movimento de hoje; com $\hat\phi < 0$, aposta na reversão.
+\end{itemize}
+
+\subsection{Regressão preditiva (OLS)}
+
+Com $y_t = \rho_{t+1}$ e cada linha de $X$ igual a $(1, x_t, \sigma_{20,t}, \rho_t, \rho_{t-1})$, em que $\sigma_{20,t}$ é a volatilidade de 20 dias:
+\[
+  y = X\beta + \varepsilon, \qquad \mathrm{SQR}(\beta) = (y - X\beta)'(y - X\beta).
+\]
+
+\bloco{Equações normais}
+Derivando a soma dos quadrados dos resíduos e igualando a zero:
+\[
+  \frac{\partial\, \mathrm{SQR}}{\partial \beta} = -2X'(y - X\beta) = 0 \;\Longrightarrow\; X'X\hat\beta = X'y \;\Longrightarrow\; \hat\beta = (X'X)^{-1}X'y.
+\]
+
+\bloco{Mínimos quadrados = máxima verossimilhança}
+Com $\varepsilon_t \sim N(0, \sigma^2)$ independentes, a log-verossimilhança é
+\[
+  \ell(\beta, \sigma^2) = -\frac{n}{2}\ln(2\pi\sigma^2) - \frac{\mathrm{SQR}(\beta)}{2\sigma^2},
+\]
+e maximizar $\ell$ em $\beta$ é o mesmo que minimizar a SQR.
+
+\bloco{Ajuste e significância}
+\[
+  R^2 = 1 - \frac{\mathrm{SQR}}{\sum_t (y_t - \bar y)^2}, \qquad
+  \widehat{\mathrm{Var}}(\hat\beta) = \hat\sigma^2\,(X'X)^{-1}, \qquad
+  t_j = \frac{\hat\beta_j}{\mathrm{ep}(\hat\beta_j)}.
+\]
+No projeto: $R^2 = 0{,}0020$ no treino, e o menor p-valor dos coeficientes é 0,074; nenhum é significativo a 5\%. O modelo explica 0,2\% da variância do retorno de amanhã: o sinal é quase todo ruído, o que ajuda a explicar o pior resultado do \textit{benchmark}.
+
+\subsection{ARMA(1,1), por máxima verossimilhança}
+
+\[
+  \rho_{t+1} = \alpha + \phi\,\rho_t + \theta\,\varepsilon_t + \varepsilon_{t+1}, \qquad \varepsilon_t \sim N(0, \sigma^2).
+\]
+O choque $\varepsilon_t$ não é observado: é reconstruído de forma recursiva, e os parâmetros saem da log-verossimilhança normal, maximizada numericamente:
+\[
+  \hat\varepsilon_t = \rho_t - \alpha - \phi\,\rho_{t-1} - \theta\,\hat\varepsilon_{t-1}, \qquad
+  \ell = -\frac{T}{2}\ln(2\pi\sigma^2) - \frac{1}{2\sigma^2}\sum_t \hat\varepsilon_t^2.
+\]
+Não há fórmula fechada porque $\hat\varepsilon_t$ depende de $\theta$ de forma recursiva. A previsão é $\hat\rho_{t+1} = \hat\alpha + \hat\phi\,\rho_t + \hat\theta\,\hat\varepsilon_t$; a condição $|\theta| < 1$ faz a recursão ``esquecer'' o valor inicial.
+
+\subsection{Logit e Probit, por máxima verossimilhança}
+
+O alvo é binário, $y_t = 1$ se amanhã sobe, e o modelo dá a probabilidade de alta, $p_t = F(x_t'\beta)$.
+
+\bloco{Logit}
+$F$ é a sigmoide, $\sigma(z) = 1/(1 + e^{-z})$. Invertendo, o log das chances é linear: $\ln\big(p_t/(1 - p_t)\big) = x_t'\beta$. Cada dia é uma Bernoulli, $P(y_t) = p_t^{y_t}(1 - p_t)^{1 - y_t}$, então
+\[
+  \ell(\beta) = \sum_t \big[y_t \ln p_t + (1 - y_t)\ln(1 - p_t)\big],
+\]
+que é a \textit{binary cross-entropy} com o sinal trocado. Como $\sigma'(z) = \sigma(z)\,(1 - \sigma(z))$:
+\[
+  \frac{\partial \ell}{\partial \beta} = \sum_t \big[y_t\,(1 - p_t) - (1 - y_t)\,p_t\big]\, x_t = \sum_t (y_t - p_t)\, x_t.
+\]
+Igualar a zero não tem solução fechada; $\hat\beta$ sai por um método numérico (Newton-Raphson).
+
+\bloco{Probit}
+Suponha uma variável não observada $y_t^* = x_t'\beta + u_t$, com $u_t \sim N(0,1)$, e $y_t = 1$ quando $y_t^* > 0$. Pela simetria da normal, $P(y_t = 1) = P(u_t > -x_t'\beta) = \Phi(x_t'\beta)$. A verossimilhança é a mesma, com $\Phi$ no lugar de $\sigma$.
+
+\bloco{Decisão}
+Comprado se $\hat p_t > 0{,}5$. Como $\sigma(0) = \Phi(0) = 0{,}5$ e as duas funções são crescentes, isso equivale a $x_t'\hat\beta > 0$. Logit e Probit só diferem pelos $\hat\beta$ estimados, e por isso os resultados quase coincidem.
+
+\subsection{Da previsão ao patrimônio e o resultado}
+
+Todos os modelos, inclusive os RL, são simulados com a mesma fórmula da recompensa, partindo de US\$ 1.000:
+\[
+  \ell_t = \ln\big(1 + a_t\, r_{t+1} - \kappa\,|a_t - a_{t-1}|\big), \qquad W_T = 1.000 \cdot \exp\Big(\sum_t \ell_t\Big).
+\]
+
+\begin{center}
+\small
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{l ccccc}
+  \toprule
+  \textbf{Modelo} & \textbf{Ret. total} & \textbf{Sharpe} & \textbf{MDD} & \textbf{Calmar} & \textbf{Trocas} \\
+  \midrule
+  MDP (\textit{Value Iteration})           & +126,86\% & 0,46    & $-$29,35\% & 0,62    & 113 \\
+  Monte Carlo                              & +119,46\% & 0,44    & $-$26,95\% & 0,65    & 108 \\
+  Q-learning                               & +86,08\%  & 0,26    & $-$51,28\% & 0,26    & 190 \\
+  \midrule
+  AR(1)                                    & +110,82\% & 0,23    & $-$73,07\% & 0,23    & 49  \\
+  ARMA(1,1)                                & +100,18\% & 0,21    & $-$72,85\% & 0,21    & 43  \\
+  Probit                                   & +54,51\%  & 0,10    & $-$72,95\% & 0,13    & 113 \\
+  Logit                                    & +50,53\%  & 0,09    & $-$72,95\% & 0,12    & 115 \\
+  \textit{Buy \& Hold} (passeio aleatório) & +31,95\%  & 0,04    & $-$66,93\% & 0,09    & 1   \\
+  Regressão preditiva (OLS)                & $-$48,48\% & $-$0,35 & $-$77,59\% & $-$0,16 & 225 \\
+  \bottomrule
+\end{tabular}
+
+\smallskip
+{\footnotesize Teste (2022 a 2026), ordenado pelo Sharpe, com a mesma corretagem para todos.}
+\end{center}
+
+\bloco{Leitura}
+\begin{itemize}
+  \item Os três RL lideram em Sharpe e Calmar.
+  \item VI e MC têm menos da metade da queda máxima dos econométricos (cerca de $-73\%$).
+  \item Os modelos lineares preveem o retorno médio de amanhã sem considerar o custo da troca nem a posição atual. O RL decide com a posição no estado e a corretagem na recompensa, e ficou fora ou vendido em boa parte da queda de 2022.
+  \item \textbf{127,80\% ou 126,86\%?} O retorno do VI difere entre a tabela de resultados e o \textit{benchmark} porque são simuladores diferentes: o \texttt{gym-trading-env} não rebalanceia o \textit{short} mantido, e o \textit{benchmark} usa a fórmula exata.
+\end{itemize}
+
+% =============================================================
+\section{\textit{Walk-forward}: retreinar ao longo do tempo}
+
+O mercado muda de regime. Retreinar o robô de tempos em tempos, só com os dados que já existiam em cada data, deveria melhorar o resultado?
+
+\bloco{Método}
+A cada retreino, tudo é refeito: tercis, $\widehat{P}$, $\widehat{R}$, VI, MC, QL e econométricos. Foram 7 configurações: nunca retreinar, ou retreinar a cada 3, 6 ou 12 meses, com todo o histórico (janela expansiva) ou só os últimos 4 anos (janela móvel). Para não escolher olhando o teste, cada modelo fica com a configuração de maior Sharpe numa validação dentro do treino (estimação até 2018, avaliação em 2019--2021).
+
+\bloco{Validação (2019--2021)}
+\begin{center}
+\small
+\begin{tabular}{l c ccc c}
+  \toprule
+  & & \multicolumn{3}{c}{\textbf{Retreina a cada}} & \\
+  \cmidrule(lr){3-5}
+  \textbf{Modelo} & \textbf{Nunca} & \textbf{12 meses} & \textbf{6 meses} & \textbf{3 meses} & \textbf{Escolha} \\
+  \midrule
+  MDP (VI)             & \textbf{1,59} & 0,91          & 0,69 & 1,19          & nunca \\
+  Monte Carlo          & 1,58          & 1,22          & 1,46 & \textbf{1,66} & 3 meses \\
+  Q-learning           & 1,15          & 0,94          & 0,81 & \textbf{1,17} & 3 meses \\
+  AR(1)                & 1,00          & \textbf{1,18} & 1,16 & 1,14          & 12 meses \\
+  \textit{Buy \& Hold} & 1,11          & 1,11          & 1,11 & 1,11          & -- \\
+  \bottomrule
+\end{tabular}
+
+\smallskip
+{\footnotesize Sharpe na validação com janela expansiva. A janela móvel não foi escolhida por nenhum desses modelos.}
+\end{center}
+
+\bloco{Teste (2022 a 2026)}
+\begin{center}
+\small
+\begin{tabular}{l c ccc c}
+  \toprule
+  & & \multicolumn{3}{c}{\textbf{Retreina a cada}} & \\
+  \cmidrule(lr){3-5}
+  \textbf{Modelo} & \textbf{Nunca} & \textbf{12 meses} & \textbf{6 meses} & \textbf{3 meses} & \textbf{Escolha na validação} \\
+  \midrule
+  MDP (VI)             & 0,46 & 0,28    & 0,35 & 0,07    & nunca \\
+  Monte Carlo          & 0,44 & 0,14    & 0,18 & 0,26    & 3 meses \\
+  Q-learning           & 0,26 & $-$0,03 & 0,25 & $-$0,17 & 3 meses \\
+  AR(1)                & 0,23 & 0,18    & 0,06 & 0,06    & 12 meses \\
+  \textit{Buy \& Hold} & 0,04 & 0,04    & 0,04 & 0,04    & -- \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+\bloco{Leitura}
+\begin{itemize}
+  \item Com todo o histórico, retreinar \textbf{não melhorou nenhum modelo}.
+  \item Exceção: Q-learning só com os últimos 4 anos, retreinando a cada 12 meses (Sharpe 0,33, com uma semente). A validação não escolheu essa configuração.
+  \item \textbf{Motivo:} cada retreino recalcula os tercis e as probabilidades. Dias perto da fronteira mudam de faixa, e a política troca de ação em parte dos estados.
+  \item Na validação, o ganho de retreinar foi mínimo para o MC (1,58 $\to$ 1,66) e para o QL (1,15 $\to$ 1,17). Diferenças tão pequenas são ruído, e não se repetiram no teste.
+\end{itemize}
+
+% =============================================================
+\section{Conclusões e limitações}
+
+\bloco{Conclusões}
+\begin{itemize}
+  \item \textbf{VI:} maior Sharpe no teste (0,46, contra 0,04 do \textit{Buy \& Hold}), com uma política que cabe numa tabela de 27 estados.
+  \item \textbf{MC:} chega perto (0,44) sem conhecer o modelo.
+  \item \textbf{QL:} mais perto de $Q^*$, mas pior no teste (0,26).
+  \item Os três RL lideram em Sharpe e Calmar contra os modelos econométricos.
+  \item Retreinar com todo o histórico não ajudou.
+\end{itemize}
+
+\bloco{Limitações}
+\begin{itemize}
+  \item Estado simples: Markov só aproximado (sem volatilidade, volume ou macro).
+  \item Um ativo e um único corte entre treino e teste.
+  \item Só corretagem: sem \textit{slippage}, impacto de mercado ou aluguel do \textit{short}.
+  \item Caixa sem juros no simulador; \textit{short} mantido não rebalanceado no \texttt{gym-trading-env}.
+  \item Os tercis e $\widehat{R}$ foram calibrados num período de forte alta (+13.144\% no \textit{Buy \& Hold} do treino): a política herda um viés comprador nos estados estáveis.
+  \item Com 5 anos de teste, as diferenças de Sharpe entre os métodos não são estatisticamente significativas.
+\end{itemize}
+
+\bloco{Próximos passos}
+Volatilidade e volume no estado, outros ativos e custos mais realistas.
+
+\bloco{Lição central}
+Com o mesmo estado de 27 estados, os métodos que usam o modelo estimado (VI) ou o retorno real do episódio (MC) generalizaram melhor do que o \textit{bootstrap} do Q-learning. E, no \textit{walk-forward}, a estabilidade da política venceu a tentativa de se adaptar a dados mais recentes.
+
+% =============================================================
+\section{Perguntas prováveis e respostas}
+
+\begin{description}[style=nextline, leftmargin=1.2em, labelindent=0pt, itemsep=6pt, font=\bfseries]
+  \item[Por que $\gamma = 0{,}8$, se $\gamma = 0{,}3$ ganhou na validação?]
+  O 0,8 foi fixado antes, pelo objetivo: a soma dos logs é o log do patrimônio final (critério de Kelly), então o futuro importa. $\gamma = 0{,}3$ é míope (o 5º dia pesa 0,2\%). A bateria só confere a sensibilidade, e entre os $\gamma \ge 0{,}8$ o 0,8 é o melhor.
+
+  \item[Por que não um $\gamma$ baixo, se a recompensa é financeira?]
+  É verdade que, com recompensa financeira, a recompensa imediata pode valer mais, e por isso descontamos. Mas $\gamma = 0{,}8$ já desconta forte: o 5º dia pesa 32,8\%. O que se evita é o extremo míope, que ignora que a posição de hoje define o custo de amanhã e que o objetivo é o patrimônio final. E $\gamma < 1$ garante a convergência do VI.
+
+  \item[O mercado é Markov?]
+  Não. Os 27 estados são uma aproximação. O MC sofre menos com isso, porque o alvo é o retorno real, e não o valor estimado do próximo estado; mas a política dele também só enxerga os 27 estados. Por isso ele é uma boa comparação com o VI e o QL.
+
+  \item[Por que o Q-learning foi pior, se chega mais perto de $Q^*$?]
+  $Q^*$ é ótimo só para o modelo estimado no treino, e pequenas diferenças de valor entre ações já mudam a ação. O QL aprendeu a comprar no neutro estável (premiado na alta do treino, caro em 2022), troca mais (190 contra 113) e depende de Markov ao fazer \textit{bootstrap}. É generalização: bom no treino, ruim fora dele.
+
+  \item[Monte Carlo ou TD: qual tem mais variância?]
+  O MC tem alta variância e baixo viés; o TD, menor variância e maior viés. Uma explicação possível para o nosso resultado: o viés do \textit{bootstrap}, somado a um estado só aproximadamente Markov, pesou mais no Q-learning do que a variância pesou no Monte Carlo.
+
+  \item[Qual a diferença entre SARSA e Q-learning?]
+  O SARSA usa no alvo a ação realmente tomada (\textit{on-policy}) e aprende o valor da política $\varepsilon$-greedy. O Q-learning usa o máximo (\textit{off-policy}) e aprende o valor da política gulosa, que é a que executamos. O SARSA não foi testado no projeto.
+
+  \item[Por que o passo é $1/N(s,a)$ e não um $\alpha$ fixo?]
+  Com $1/N$, $Q(s,a)$ vira a média exata das amostras, e o passo cumpre as condições de convergência. Usar a mesma regra no Monte Carlo e no Q-learning deixa a comparação justa.
+
+  \item[Por que \textit{Value Iteration} e não \textit{Policy Iteration}?]
+  Os dois resolvem a mesma equação de otimalidade e chegam ao mesmo $V^*$. Com 27 estados, os dois são rápidos; o VI convergiu em 98 iterações.
+
+  \item[Os resultados dependem da semente?]
+  Pouco para o MC \textit{every-visit}: com 5 sementes, o desvio do Sharpe no teste é 0,09. O mais variável é o MC \textit{first-visit} (0,26).
+
+  \item[As diferenças de Sharpe são estatisticamente significativas?]
+  Isoladamente, não: com 1.783 dias de teste, o erro padrão do Sharpe anual é cerca de 0,45. O argumento está na consistência: os três RL acima de todos os econométricos em Sharpe e Calmar, com queda máxima menor que a de todos eles, e resultados parecidos com 5 sementes.
+
+  \item[O teste é justo com o \textit{Buy \& Hold}?]
+  Todos operam no mesmo período, que começa perto de um topo. Por isso o foco é o retorno ajustado ao risco: os RL vencem em Sharpe e em queda máxima.
+
+  \item[Por que o \textit{Buy \& Hold} aparece como passeio aleatório?]
+  O passeio aleatório tem média positiva, então prevê alta todo dia e fica sempre comprado: é exatamente o \textit{Buy \& Hold}.
+
+  \item[Por que o retorno do VI é 127,80\% numa tabela e 126,86\% na outra?]
+  Simuladores diferentes: o \texttt{gym-trading-env} não rebalanceia o \textit{short} mantido; o \textit{benchmark} usa a fórmula exata para todos.
+
+  \item[Por que retreinar não ajudou?]
+  Cada retreino muda tercis e probabilidades, e a política troca de ação. Os ganhos na validação foram mínimos (MC +0,08, QL +0,02) e não se repetiram no teste.
+
+  \item[O robô aprende online ou offline?]
+  Offline: aprende com o histórico de preços, sem operar de verdade. Funciona porque o robô não mexe no preço: qualquer ação pode ser simulada sobre o histórico, e o que depende da ação (posição e corretagem) é calculado exatamente. A desvantagem, ser menos adaptável, é o que o \textit{walk-forward} testa.
+
+  \item[Por que a recompensa em log?]
+  A soma dos logs diários é o log do patrimônio final (aditividade exata), e a recompensa não depende do tamanho da conta.
+
+  \item[Por que 365 dias e não 252?]
+  O Bitcoin negocia todos os dias; cada dia é um período.
+
+  \item[Por que tercis e não limites fixos?]
+  Dividem o treino em faixas com 1/3 dos dias cada, são calculados só no treino (sem vazar o teste) e se adaptam à distribuição do ativo.
+
+  \item[Por que o estado $(0,2)$ mantém a posição?]
+  Ele nunca ocorre no treino: $\widehat{P}$ é uniforme e o retorno é nulo, então a única recompensa é o custo da troca.
+
+  \item[Por que a $\varepsilon$-greedy perde?]
+  Com 10\% de ações sorteadas, as trocas mais que dobram e o robô fica em posições erradas. A versão com exploração venceu a gulosa em só 21\% a 24\% das sementes.
+\end{description}
+
+\end{document}
