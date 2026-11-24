@@ -135,8 +135,8 @@
         \[
           R_{t+1} = \ln\Big(1 + \underbrace{a_t \, r_{t+1}}_{\text{retorno}} - \underbrace{\kappa\, |a_t - h_{t-1}|}_{\text{corretagem}}\Big)
         \]
-        {\centering\footnotesize $r_{t+1} = c_{t+1}/c_t - 1$\\
-        $\kappa = 0{,}1\%$, cobrada quando $a_t \neq h_{t-1}$\par}
+        {\centering\footnotesize $r_{t+1} = c_{t+1}/c_t - 1$ \qquad $\kappa = 0{,}1\%$\\
+        por unidade trocada: $+1 \to -1$ paga $0{,}2\%$\par}
         \end{altura}
       \end{block}
     \end{column}
@@ -146,10 +146,10 @@
         \begin{altura}{2.4cm}
         \footnotesize
         \begin{itemize}\setlength{\itemsep}{3pt}
-          \item 1 decisão por dia
-          \item Bitcoin negocia 24h, 7 dias por semana
-          \item \textbf{Fechamento: 21h de Brasília} (0h UTC)
-          \item 1 ano $=$ 365 dias no Sharpe
+          \item 1 decisão por dia: \textbf{21h de Brasília} (0h UTC)
+          \item BTC negocia 24h, 7 dias: 1 ano $=$ 365 dias
+          \item \textbf{Treino:} 06/11/2014 a 31/12/2021
+          \item \textbf{Teste:} 01/01/2022 a 18/11/2026
         \end{itemize}
         \end{altura}
       \end{block}
@@ -258,7 +258,8 @@
       \tilde{s}_t = \big(\phi(x_t),\, \phi(x_{t-1}),\, h_{t-1}\big) \in \{0,1,2\}^2 \times \{-1,0,+1\}
       \quad\Rightarrow\quad |\mathcal{S}| = \mathbf{27\text{ estados}}
     \]
-    {\centering\footnotesize mesma discretização no \textit{Value Iteration}, no Monte Carlo e no Q-learning\par}
+    {\centering\footnotesize mesma discretização no \textit{Value Iteration}, no Monte Carlo e no Q-learning\\
+    Markov é uma aproximação: o mercado não garante que os 27 estados resumam o passado\par}
   \end{block}
 
 \end{frame}
@@ -334,7 +335,7 @@
 
   \vskip 0.1cm
 
-  \begin{block}{$\widehat{P}$ estimada no treino (contagens de 2014 a 2021)}
+  \begin{block}{$\widehat{P}$ no treino (2014 a 2021): só a parte de mercado, a posição vem da ação}
     \centering\footnotesize
     \renewcommand{\arraystretch}{1.25}
     \begin{tabular}{l ccccccccc}
@@ -528,7 +529,7 @@
 
   \vskip 0.1cm
 
-  \begin{block}{\textit{Value Iteration} $\times$ Monte Carlo $\times$ Q-learning}
+  \begin{block}{\textit{Value Iteration} $\times$ Monte Carlo $\times$ Q-learning (treino, semente 42)}
     \centering\scriptsize
     \setlength{\tabcolsep}{6pt}
     \renewcommand{\arraystretch}{1.0}
@@ -543,7 +544,7 @@
       Aprende                  & --                                                        & \textit{on-policy}        & \textit{off-policy} \\
       \midrule
       Custo do treino          & 98 iterações                                              & 1.260.000 atualizações    & 2.520.000 atualizações \\
-      Sharpe no treino         & 1,09                                                      & 1,20                      & 1,37 \\
+      Sharpe no treino         & 1,09                                                      & 1,20                     & 1,37 \\
       \bottomrule
     \end{tabular}
   \end{block}
@@ -589,7 +590,7 @@
           \item Recompensa em log: a soma é o log do patrimônio final
           \item Objetivo: maximizar a carteira, então o futuro importa
           \item $\gamma$ baixo: agente quase míope
-          \item Regra: maior Sharpe na validação entre $\gamma \ge 0{,}8$
+          \item $\gamma = 0{,}8$ fixado antes, pelo objetivo: a bateria só confere a sensibilidade
         \end{itemize}
         \end{altura}
       \end{block}
@@ -693,15 +694,12 @@
       \midrule
       MC first-visit & Média         & 1,42   & 0,30   & -39,07\% & 0,44   \\
                      & Desvio padrão & 0,17   & 0,26   & 19,31\%  & 0,39   \\
-                     & Variância     & 0,0291 & 0,0680 & 0,0373   & 0,1486 \\
       \midrule
       MC every-visit & Média         & 1,17            & 0,34            & -33,24\%         & 0,47   \\
                      & Desvio padrão & \textbf{0,04}   & \textbf{0,09}   & \textbf{7,94\%}  & 0,17   \\
-                     & Variância     & \textbf{0,0015} & \textbf{0,0077} & \textbf{0,0063}  & 0,0301 \\
       \midrule
       Q-learning     & Média         & 1,31   & 0,24   & -49,58\% & 0,27            \\
                      & Desvio padrão & 0,10   & 0,12   & 13,24\%  & \textbf{0,12}   \\
-                     & Variância     & 0,0098 & 0,0155 & 0,0175   & \textbf{0,0143} \\
       \bottomrule
     \end{tabular}
   \end{block}
@@ -724,7 +722,7 @@
 % =============================================================
 \begin{frame}{14. Resultados no \texttt{gym-trading-env}}
 
-  \begin{block}{BTC-USD, $\kappa = 0{,}1\%$, $\gamma = 0{,}8$}
+  \begin{block}{BTC-USD, $\kappa = 0{,}1\%$, $\gamma = 0{,}8$, Monte Carlo e Q-learning com a semente 42}
     \centering\scriptsize
     \setlength{\tabcolsep}{5pt}
     \renewcommand{\arraystretch}{1.05}
@@ -751,6 +749,12 @@
     \end{tabular}
   \end{block}
 
+  \small
+  \begin{itemize}\setlength{\itemsep}{2pt}
+    \item \textbf{VI:} maior Sharpe no teste \quad \textbf{Monte Carlo:} menor queda máxima entre os RL
+    \item \textbf{Q-learning:} maior Sharpe no treino, mas o pior dos três no teste
+  \end{itemize}
+
 \end{frame}
 
 % =============================================================
@@ -766,7 +770,7 @@
       \toprule
       \textbf{Estratégia} & \textbf{Retorno Total} & \textbf{Retorno Anual} & \textbf{Sharpe} & \textbf{Max Drawdown} & \textbf{Calmar} & \textbf{Trocas} \\
       \midrule
-      \multicolumn{7}{l}{\textit{Com corretagem ($\kappa = 0{,}1\%$ por troca)}} \\
+      \multicolumn{7}{l}{\textit{Com corretagem ($\kappa = 0{,}1\%$ por unidade trocada)}} \\
       MDP (Value Iteration)      & 127,80\%  & 18,37\%  & 0,46  & -29,35\%  & 0,63  & 113 \\
       Monte Carlo (every-visit)  & 119,47\%  & 17,47\%  & 0,44  & -26,95\%  & 0,65  & 108 \\
       Q-learning                 & 86,39\%   & 13,60\%  & 0,26  & -51,25\%  & 0,27  & 190 \\
@@ -845,12 +849,6 @@
     \end{tabular}
   \end{block}
 
-  \small
-  \begin{itemize}\setlength{\itemsep}{2pt}
-    \item A gulosa vence nos três métodos
-    \item Explorar serve para aprender, não para operar
-  \end{itemize}
-
 \end{frame}
 
 % =============================================================
@@ -858,7 +856,7 @@
 % =============================================================
 \begin{frame}{18. Benchmark no Teste: RL $\times$ Modelos Econométricos}
 
-  \begin{block}{Ranking por Sharpe \quad (Calmar = retorno anual / $|$max drawdown$|$)}
+  \begin{block}{Ranking por Sharpe \quad (econométricos: previsão de alta $\to$ comprado, senão vendido)}
     \centering\footnotesize
     \setlength{\tabcolsep}{7pt}
     \renewcommand{\arraystretch}{1.05}
@@ -875,7 +873,6 @@
       Probit                           & +54,51\%  & 0,10  & -72,95\% & 0,13  & 113 \\
       Logit                            & +50,53\%  & 0,09  & -72,95\% & 0,12  & 115 \\
       Buy \& Hold (passeio aleatório)  & +31,95\%  & 0,04  & -66,93\% & 0,09  & 1   \\
-      Markov-switching (Hamilton)      & +31,95\%  & 0,04  & -66,93\% & 0,09  & 1   \\
       Regressão preditiva (OLS)        & -48,48\%  & -0,35 & -77,59\% & -0,16 & 225 \\
       \bottomrule
     \end{tabular}
@@ -888,7 +885,7 @@
   \end{itemize}
 
   \vfill
-  {\scriptsize\color{SlateGray} Simulação própria, igual para todos os modelos: o RL difere pouco do \texttt{gym-trading-env} (slide 14) porque o simulador não rebalanceia o \textit{short} mantido.\par}
+  {\scriptsize\color{SlateGray} Econométricos estimados só no treino (até 2021). Simulação própria, com a mesma corretagem para todos: o RL difere pouco do \texttt{gym-trading-env} (slide 14) porque o simulador não rebalanceia o \textit{short} mantido.\par}
 
 \end{frame}
 
@@ -982,6 +979,51 @@
     \item Exceção: Q-learning só com os últimos 4 anos, a cada 12 meses (0,33; 1 semente)
     \item Motivo: cada retreino muda tercis e probabilidades, e a política troca de ação
   \end{itemize}
+
+\end{frame}
+
+% =============================================================
+% SLIDE 21 — CONCLUSÕES E LIMITAÇÕES
+% =============================================================
+\begin{frame}{21. Conclusões e Limitações}
+
+  \begin{columns}[T,onlytextwidth]
+    \begin{column}{0.48\textwidth}
+      \begin{block}{Conclusões}
+        \begin{altura}{3.0cm}
+        \small
+        \begin{itemize}\setlength{\itemsep}{4pt}
+          \item \textbf{VI:} maior Sharpe no teste (0,46)
+          \item \textbf{MC:} perto, sem o modelo (0,44)
+          \item \textbf{QL:} mais perto de $Q^*$, pior no teste
+          \item RL lidera Sharpe e Calmar no benchmark
+          \item \textit{Walk-forward}: retreinar não ajudou
+        \end{itemize}
+        \end{altura}
+      \end{block}
+    \end{column}
+
+    \begin{column}{0.48\textwidth}
+      \begin{alertblock}{Limitações}
+        \begin{altura}{3.0cm}
+        \small
+        \begin{itemize}\setlength{\itemsep}{4pt}
+          \item Estado simples: Markov só aproximado
+          \item 1 ativo e 1 corte treino/teste
+          \item Só corretagem, sem \textit{slippage}
+          \item Caixa sem juros no simulador
+        \end{itemize}
+        \end{altura}
+      \end{alertblock}
+    \end{column}
+  \end{columns}
+
+  \vskip 0.2cm
+
+  \begin{block}{Próximos passos}
+    \small
+    Volatilidade e volume no estado \quad$\cdot$\quad outros ativos \quad$\cdot$\quad custos mais realistas
+  \end{block}
 
 \end{frame}
 

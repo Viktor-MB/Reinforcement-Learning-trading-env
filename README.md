@@ -45,7 +45,7 @@ Estado discreto: $\tilde{s}_t = (\phi(x_t), \phi(x_{t-1}), h_{t-1})$, com $|\mat
 $$R_{t+1} = \ln\left(\frac{W_{t+1}}{W_t}\right) = \ln\left(1 + a_t\, r_{t+1} - \kappa\,\lvert a_t - h_{t-1}\rvert\right)$$
 
 - $r_{t+1} = c_{t+1}/c_t - 1$ é o retorno do ativo.
-- $\kappa = 0{,}1\%$ é a corretagem, cobrada quando a posição muda.
+- $\kappa = 0{,}1\%$ é a corretagem, cobrada por unidade de posição trocada: inverter de +1 para −1 paga $2\kappa = 0{,}2\%$.
 - Transição: $\tilde{s}_{t+1} = (\phi(x_{t+1}), \phi(x_t), a_t)$. A parte da posição é determinística; a parte de mercado vem dos dados.
 
 > No simulador, o *short* mantido não é rebalanceado para −100% todo dia. Por isso a recompensa do ambiente difere levemente da fórmula nesses passos. Isso está documentado nos testes do notebook (seção 14).
@@ -105,7 +105,7 @@ $$Q(s,a) \leftarrow Q(s,a) + \frac{1}{N(s,a)}\Big[R_{t+1} + \gamma \max_{a'} Q(s
 
 ## Resultados
 
-Treino: 06/11/2014 a 31/12/2021. Teste: 01/01/2022 a 18/11/2026. $\kappa = 0{,}1\%$, $\gamma = 0{,}8$.
+Treino: 06/11/2014 a 31/12/2021. Teste: 01/01/2022 a 18/11/2026. $\kappa = 0{,}1\%$, $\gamma = 0{,}8$. Monte Carlo e Q-learning com a semente 42 (a variação entre sementes está mais abaixo).
 
 ### Execução no `gym-trading-env` (teste)
 
@@ -168,10 +168,9 @@ Explorar serve para aprender, não para operar.
 | Probit | +54,51% | 0,10 | −72,95% | 0,13 | 113 |
 | Logit | +50,53% | 0,09 | −72,95% | 0,12 | 115 |
 | Buy & Hold (passeio aleatório) | +31,95% | 0,04 | −66,93% | 0,09 | 1 |
-| Markov-switching (Hamilton) | +31,95% | 0,04 | −66,93% | 0,09 | 1 |
 | Regressão preditiva (OLS) | −48,48% | −0,35 | −77,59% | −0,16 | 225 |
 
-O *benchmark* usa um simulador próprio, com as mesmas fórmulas. Por isso há diferenças pequenas em relação à tabela do `gym-trading-env`.
+Os modelos econométricos são estimados só no treino (até 2021); previsão de alta vira comprado, senão vendido. O *benchmark* usa um simulador próprio, com as mesmas fórmulas e a mesma corretagem para todos. Por isso há diferenças pequenas em relação à tabela do `gym-trading-env`.
 
 ### *Walk-forward*: reestimação periódica
 
@@ -191,7 +190,7 @@ O *benchmark* usa um simulador próprio, com as mesmas fórmulas. Por isso há d
 ### Escolha de γ: bateria na validação
 
 - **Por que γ alto:** a recompensa é o log-retorno, então a soma das recompensas é o log do patrimônio final. Para maximizar a carteira, o futuro importa.
-- **Regra:** treino até 2018 e validação em 2019–2021, como no *walk-forward*. Entre os γ ≥ 0,8, fica o de maior Sharpe médio na validação. Monte Carlo e Q-learning: média de 5 sementes.
+- **Conferência:** γ = 0,8 foi fixado antes, pelo objetivo; a bateria só confere a sensibilidade. Treino até 2018 e validação em 2019–2021, como no *walk-forward*. Entre os γ ≥ 0,8, o 0,8 tem o maior Sharpe médio na validação. Monte Carlo e Q-learning: média de 5 sementes.
 
 | γ | Peso em 5 dias (γ⁵) | Episódio (dias) | MDP (VI) | Monte Carlo | Q-learning | Média |
 |---|---|---|---|---|---|---|
@@ -277,7 +276,7 @@ SEED   = 42             # sementes 42 a 46 na análise de variância
 
 ## Limitações
 
-- **Estado simples:** 3 faixas do sinal preço/MA50 e as duas últimas observações. Não captura volatilidade, volume ou regimes macro.
+- **Estado simples:** 3 faixas do sinal preço/MA50 e as duas últimas observações. Não captura volatilidade, volume ou regimes macro, então a propriedade de Markov é só uma aproximação.
 - **Um único ativo** e um único corte treino/teste. O *walk-forward* mostrou que retreinar recalculando os tercis deixa a política instável.
 - **Custos simplificados:** só corretagem fixa (o efeito dela está na tabela com e sem corretagem). Não há *slippage*, impacto de mercado ou custo de aluguel no *short*.
 - **Caixa sem juros** no simulador, o que torna o Sharpe conservador.
